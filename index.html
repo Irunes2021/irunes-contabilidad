@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contabilidad — CC Irunes</title>
+  <style>
+    :root {
+      --bg: #f7f8fa;
+      --surface: #ffffff;
+      --border: #e2e6ea;
+      --text: #1a1d23;
+      --muted: #6b7280;
+      --accent: #d62828;
+      --accent-soft: #fef2f2;
+      --escuela: #1d4ed8;
+      --escuela-soft: #eff6ff;
+      --sociedad: #15803d;
+      --sociedad-soft: #f0fdf4;
+      --warn: #d97706;
+      --warn-soft: #fffbeb;
+      --radius: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* LOGIN */
+    #login-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--text);
+    }
+    .login-box {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 40px;
+      width: 320px;
+      text-align: center;
+    }
+    .login-box .logo {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: -1px;
+      margin-bottom: 4px;
+    }
+    .login-box .subtitle {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 28px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .login-box input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 18px;
+      text-align: center;
+      letter-spacing: 6px;
+      margin-bottom: 12px;
+    }
+    .login-box input:focus { outline: 2px solid var(--accent); border-color: transparent; }
+    .login-box .error { color: var(--accent); font-size: 12px; margin-bottom: 10px; min-height: 18px; }
+
+    /* APP SHELL */
+    #app { display: none; min-height: 100vh; }
+
+    header {
+      background: var(--text);
+      color: white;
+      padding: 0 24px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-logo { font-weight: 800; font-size: 16px; color: white; letter-spacing: -0.5px; }
+    .header-logo span { color: var(--accent); }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .temporada-badge {
+      background: rgba(255,255,255,0.1);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.7);
+    }
+
+    /* NAV TABS */
+    .nav-tabs {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      gap: 0;
+    }
+    .nav-tab {
+      padding: 14px 18px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .nav-tab:hover { color: var(--text); }
+    .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* MAIN */
+    main { padding: 24px; max-width: 1200px; margin: 0 auto; }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* CARDS */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-title { font-weight: 600; font-size: 14px; }
+    .card-body { padding: 20px; }
+
+    /* SUMMARY CARDS */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+    }
+    .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 6px; }
+    .stat-value { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+    .stat-value.positive { color: var(--sociedad); }
+    .stat-value.negative { color: var(--accent); }
+    .stat-value.neutral { color: var(--text); }
+    .stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    /* MONTH SELECTOR */
+    .month-nav {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .month-btn {
+      padding: 6px 14px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 12px;
+      cursor: pointer;
+      background: var(--surface);
+      color: var(--muted);
+      transition: all 0.15s;
+    }
+    .month-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .month-btn.active { background: var(--accent); border-color: var(--accent); color: white; font-weight: 600; }
+    .month-btn.has-data { color: var(--text); font-weight: 500; }
+
+    /* UPLOAD ZONE */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--bg);
+    }
+    .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); background: var(--accent-soft); }
+    .upload-zone .upload-icon { font-size: 32px; margin-bottom: 10px; }
+    .upload-zone p { color: var(--muted); font-size: 13px; }
+    .upload-zone strong { color: var(--text); }
+    #file-input { display: none; }
+
+    /* BUTTONS */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+    }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: #b91c1c; }
+    .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: var(--bg); }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* TABLE */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg); }
+
+    .importe-pos { color: var(--sociedad); font-weight: 600; }
+    .importe-neg { color: var(--accent); font-weight: 600; }
+
+    /* BADGES */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-escuela { background: var(--escuela-soft); color: var(--escuela); }
+    .badge-sociedad { background: var(--sociedad-soft); color: var(--sociedad); }
+    .badge-warn { background: var(--warn-soft); color: var(--warn); }
+
+    /* SELECT / INPUT inline */
+    select, input[type="text"] {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 13px;
+      background: white;
+      color: var(--text);
+    }
+    select:focus, input[type="text"]:focus { outline: 2px solid var(--accent); border-color: transparent; }
+
+    /* TOOLBAR */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .toolbar-spacer { flex: 1; }
+
+    /* PENDING COUNT */
+    .pending-dot {
+      display: inline-block;
+      width: 6px; height: 6px;
+      background: var(--warn);
+      border-radius: 50%;
+      margin-left: 4px;
+      vertical-align: middle;
+    }
+
+    /* MODAL */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border-radius: 12px;
+      width: 90%;
+      max-width: 900px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-body { padding: 20px 24px; overflow-y: auto; flex: 1; }
+    .modal-footer {
+      padding: 14px 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .modal-close { cursor: pointer; color: var(--muted); font-size: 20px; line-height: 1; background: none; border: none; }
+
+    /* TOAST */
+    #toast {
+      position: fixed;
+      bottom: 24px; right: 24px;
+      background: var(--text);
+      color: white;
+      padding: 12px 18px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 999;
+      pointer-events: none;
+    }
+    #toast.show { opacity: 1; }
+
+    /* RESUMEN SECTION */
+    .resumen-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 700px) { .resumen-grid { grid-template-columns: 1fr; } }
+
+    .concepto-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .concepto-row:last-child { border-bottom: none; }
+    .concepto-row .label { color: var(--text); }
+    .concepto-row .valor { font-weight: 600; }
+
+    /* LOADING */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--muted);
+    }
+    .empty-state .icon { font-size: 36px; margin-bottom: 10px; }
+    .empty-state p { font-size: 13px; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="logo">irunes</div>
+    <div class="subtitle">Contabilidad</div>
+    <input type="password" id="pin-input" placeholder="••••" maxlength="5" autofocus>
+    <div class="error" id="login-error"></div>
+    <button class="btn btn-primary" style="width:100%" onclick="checkPin()">Entrar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div class="header-logo">CC <span>irunes</span> · Contabilidad</div>
+    <div class="header-right">
+      <div class="temporada-badge" id="temporada-label">25-26</div>
+    </div>
+  </header>
+
+  <div class="nav-tabs">
+    <div class="nav-tab active" onclick="showPage('movimientos')">Movimientos</div>
+    <div class="nav-tab" onclick="showPage('resumen')">Resumen</div>
+    <div class="nav-tab" onclick="showPage('importar')">Importar XLS</div>
+  </div>
+
+  <main>
+    <!-- MOVIMIENTOS PAGE -->
+    <div class="page active" id="page-movimientos">
+      <div class="month-nav" id="month-nav"></div>
+
+      <div class="summary-grid" id="mes-stats">
+        <div class="stat-card">
+          <div class="stat-label">Ingresos del mes</div>
+          <div class="stat-value positive" id="stat-ingresos">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Gastos del mes</div>
+          <div class="stat-value negative" id="stat-gastos">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Resultado</div>
+          <div class="stat-value neutral" id="stat-resultado">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Sin categorizar</div>
+          <div class="stat-value" id="stat-pendientes" style="color:var(--warn)">—</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title" id="tabla-titulo">Movimientos</div>
+          <div style="display:flex;gap:8px">
+            <select id="filtro-area" onchange="renderTabla()">
+              <option value="">Todas las áreas</option>
+              <option value="Escuela">Escuela</option>
+              <option value="Sociedad">Sociedad</option>
+              <option value="???">Sin categorizar</option>
+            </select>
+            <button class="btn btn-secondary btn-sm" onclick="exportarExcel()">⬇ Excel</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="tabla-movimientos">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Concepto bancario</th>
+                <th style="text-align:right">Importe</th>
+                <th>Área</th>
+                <th>Concepto</th>
+                <th>Factura</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tabla-body">
+              <tr><td colspan="7"><div class="empty-state"><div class="icon">📂</div><p>Selecciona un mes o importa un extracto bancario</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESUMEN PAGE -->
+    <div class="page" id="page-resumen">
+      <h2 style="font-size:18px;font-weight:700;margin-bottom:20px">Resumen temporada <span id="resumen-temporada">25-26</span></h2>
+      <div class="resumen-grid">
+        <div class="card">
+          <div class="card-header"><div class="card-title" style="color:var(--escuela)">Escuela de Ciclismo</div></div>
+          <div class="card-body">
+            <div id="resumen-escuela-ingresos"></div>
+            <div style="border-top:2px solid var(--border);margin:12px 0;padding-top:12px">
+              <div id="resumen-escuela-gastos"></div>
+            </div>
+            <div class="concepto-row" style="font-weight:700">
+              <span>Resultado</span>
+              <span id="resumen-escuela-total" class="valor">—</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title" style="color:var(--sociedad)">Sociedad Gastronómica</div></div>
+          <div class="card-body">
+            <div id="resumen-sociedad-ingresos"></div>
+            <div style="border-top:2px solid var(--border);margin:12px 0;padding-top:12px">
+              <div id="resumen-sociedad-gastos"></div>
+            </div>
+            <div class="concepto-row" style="font-weight:700">
+              <span>Resultado</span>
+              <span id="resumen-sociedad-total" class="valor">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:16px;text-align:right">
+        <button class="btn btn-secondary" onclick="exportarResumen()">⬇ Exportar informe</button>
+      </div>
+    </div>
+
+    <!-- IMPORTAR PAGE -->
+    <div class="page" id="page-importar">
+      <div class="card" style="max-width:600px;margin:0 auto">
+        <div class="card-header"><div class="card-title">Importar extracto bancario</div></div>
+        <div class="card-body">
+          <p style="color:var(--muted);margin-bottom:20px;font-size:13px">
+            Descarga el extracto XLS desde la web del banco (BBK) y súbelo aquí. Los movimientos se categorizarán automáticamente según patrones conocidos.
+          </p>
+          <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()"
+               ondragover="event.preventDefault();this.classList.add('drag')"
+               ondragleave="this.classList.remove('drag')"
+               ondrop="handleDrop(event)">
+            <div class="upload-icon">📄</div>
+            <p><strong>Haz clic para seleccionar</strong> o arrastra el fichero XLS aquí</p>
+            <p style="margin-top:6px;font-size:12px">Formato: extracto BBK (.xls)</p>
+          </div>
+          <input type="file" id="file-input" accept=".xls,.xlsx" onchange="handleFile(this.files[0])">
+
+          <div id="preview-area" style="display:none;margin-top:20px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <div>
+                <strong id="preview-count"></strong>
+                <span style="color:var(--muted);font-size:12px" id="preview-period"></span>
+              </div>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-secondary btn-sm" onclick="cancelarImport()">Cancelar</button>
+                <button class="btn btn-primary btn-sm" id="btn-guardar" onclick="guardarMovimientos()">Guardar en base de datos</button>
+              </div>
+            </div>
+            <div class="table-wrap" style="max-height:400px;overflow-y:auto">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Concepto</th>
+                    <th style="text-align:right">Importe</th>
+                    <th>Área</th>
+                    <th>Concepto básico</th>
+                  </tr>
+                </thead>
+                <tbody id="preview-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- MODAL EDITAR MOVIMIENTO -->
+<div class="modal-overlay" id="modal-editar">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div style="font-weight:700;font-size:15px" id="modal-concepto-titulo"></div>
+        <div style="font-size:12px;color:var(--muted)" id="modal-fecha-titulo"></div>
+      </div>
+      <button class="modal-close" onclick="cerrarModal('modal-editar')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">ÁREA</label>
+          <select id="edit-area" style="width:100%">
+            <option value="Escuela">Escuela</option>
+            <option value="Sociedad">Sociedad</option>
+            <option value="???">Sin categorizar</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">CONCEPTO</label>
+          <select id="edit-concepto" style="width:100%" onchange="onConceptoChange()">
+            <option value="">— selecciona —</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">FACTURA</label>
+          <select id="edit-factura" style="width:100%">
+            <option value="false">No</option>
+            <option value="true">Sí</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">Nº FACTURA</label>
+          <input type="text" id="edit-nfactura" style="width:100%" placeholder="opcional">
+        </div>
+        <div style="grid-column:1/-1">
+          <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">OBSERVACIONES</label>
+          <input type="text" id="edit-obs" style="width:100%" placeholder="opcional">
+        </div>
+      </div>
+
+      <!-- Detalle visa (solo si es visa) -->
+      <div id="visa-section" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <strong style="font-size:13px">Detalle de la visa</strong>
+          <button class="btn btn-secondary btn-sm" onclick="addVisaRow()">+ Añadir línea</button>
+        </div>
+        <div id="visa-total-check" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
+        <table style="width:100%">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Concepto</th>
+              <th style="text-align:right">Importe</th>
+              <th>Área</th>
+              <th>Concepto básico</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="visa-detail-body"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="cerrarModal('modal-editar')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarEdicion()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+
+const SUPABASE_URL = 'https://dbydtwkzknbpifneznsu.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRieWR0d2t6a25icGlmbmV6bnN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMjMwODIsImV4cCI6MjA5MDc5OTA4Mn0.HcTWBEaI-2EH66mAUAaEM2ppzDG3eCd1ANjopNZdt1g';
+const PIN = '2121$';
+
+// ─── CONCEPTOS ───────────────────────────────────────────────
+const CONCEPTOS = {
+  Escuela: [
+    'Monitores y entrenadores','Cuota corredores','Cuotas socios','Licencias',
+    'Ropa','Hoteles, Comidas y Salidas','Gasolina','Autopistas','Parking',
+    'Seguros','Reparaciones y ITV','Impuestos coches','Material deportivo',
+    'Reconocimientos médicos','Subvenciones','Patrocinios','Premios y dietas',
+    'San Pedro','Carreras Txikis','Lotería navidad','Venta de ropa',
+    'Presentación temporada','Juanma Garate','Velodromo','Txozna',
+    'Web e Internet','Multas y embargos','Devoluciones','Visas','Varios Escuela'
+  ],
+  Sociedad: [
+    'Bodega','Luz','Gas','Agua','Teléfono e Internet','Seguros Sociedad',
+    'Limpieza','TPV y Comisiones','Mantenimiento Sociedad','IBI',
+    'Comunidad','Cocina','Gastos Sociedad Varios'
+  ]
+};
+
+// ─── REGLAS CATEGORIZACIÓN AUTO ──────────────────────────────
+const REGLAS = [
+  // Sociedad
+  { match: /IBERDROLA/i, area: 'Sociedad', concepto: 'Luz' },
+  { match: /ORANGE|TELEFON/i, area: 'Sociedad', concepto: 'Teléfono e Internet' },
+  { match: /TXINGUDI|AGUA/i, area: 'Sociedad', concepto: 'Agua' },
+  { match: /ARZAC|BAQUE|MAKRO|BM PALMERA|BODEGA/i, area: 'Sociedad', concepto: 'Bodega' },
+  { match: /ABONO TPV/i, area: 'Sociedad', concepto: 'Bodega' },
+  { match: /COMISIONES.*TPV|SERVICIO.*TPV/i, area: 'Sociedad', concepto: 'TPV y Comisiones' },
+  { match: /GAS (NATURAL|SDG|NATURAL SDG)/i, area: 'Sociedad', concepto: 'Gas' },
+  // Escuela - ingresos
+  { match: /REMESA RECIBOS/i, area: 'Escuela', concepto: 'Cuota corredores' },
+  { match: /BIDASOA OPTIKA|BYGUK/i, area: 'Escuela', concepto: 'Patrocinios' },
+  { match: /GIPUZKOAKO TXIRRINDULARITZA|FEDERAZI/i, area: 'Escuela', concepto: 'Premios y dietas' },
+  { match: /TRANSFERENCIA.*IRUN$|AYUNTAMIENTO/i, area: 'Escuela', concepto: 'Subvenciones' },
+  // Escuela - gastos
+  { match: /TRANSFERENCIA A (Jon Morillo|Dani |Daniel Iglesias|Iker Amantegi|Iker Ginzo|Gorka Zamar|Julen Mendi|Koldo Alzaga|Eider Etxaniz|Mikel Maeso|andoitz|Oscar Ginzo|Nestor Corre|Cristina)/i, area: 'Escuela', concepto: 'Monitores y entrenadores' },
+  { match: /TARJETA CREDITO CLUB CICLISTA/i, area: 'Escuela', concepto: 'Autopistas' },
+  { match: /EASY GAS|GASOLINA|PETROL/i, area: 'Escuela', concepto: 'Gasolina' },
+  { match: /EUSKADI LOW COST|LOW COST EUSKADI/i, area: 'Escuela', concepto: 'Hoteles, Comidas y Salidas' },
+  { match: /FUNDACION VASCA.*CALIDAD/i, area: 'Escuela', concepto: 'Seguros' },
+  { match: /VIASA|ALLER PEREZ/i, area: 'Escuela', concepto: 'Reparaciones y ITV' },
+  { match: /LICENCIAS|FEDERACION/i, area: 'Escuela', concepto: 'Licencias' },
+];
+
+function categorizar(concepto) {
+  for (const r of REGLAS) {
+    if (r.match.test(concepto)) return { area: r.area, concepto: r.concepto };
+  }
+  return { area: '???', concepto: '' };
+}
+
+// ─── AUTH ─────────────────────────────────────────────────────
+function checkPin() {
+  const val = document.getElementById('pin-input').value;
+  if (val === PIN) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    init();
+  } else {
+    document.getElementById('login-error').textContent = 'Código incorrecto';
+    document.getElementById('pin-input').value = '';
+  }
+}
+document.getElementById('pin-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkPin(); });
+
+// ─── NAVIGATION ───────────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  event.target.classList.add('active');
+  if (id === 'resumen') cargarResumen();
+}
+
+// ─── STATE ────────────────────────────────────────────────────
+const MESES = ['Nov','Dic','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct'];
+const MESES_NUM = [11,12,1,2,3,4,5,6,7,8,9,10];
+let mesActivo = null;
+let movimientosCache = [];
+let editando = null;
+let pendingImport = [];
+
+// ─── INIT ─────────────────────────────────────────────────────
+async function init() {
+  renderMonthNav();
+  // Select current month
+  const now = new Date();
+  const mesIdx = MESES_NUM.indexOf(now.getMonth() + 1);
+  if (mesIdx >= 0) selectMes(mesIdx);
+}
+
+function renderMonthNav() {
+  const nav = document.getElementById('month-nav');
+  nav.innerHTML = MESES.map((m, i) => `
+    <div class="month-btn" id="mbtn-${i}" onclick="selectMes(${i})">${m}</div>
+  `).join('');
+}
+
+async function selectMes(idx) {
+  mesActivo = idx;
+  document.querySelectorAll('.month-btn').forEach((b,i) => {
+    b.classList.toggle('active', i === idx);
+  });
+  document.getElementById('tabla-titulo').textContent = `Movimientos — ${MESES[idx]}`;
+  await cargarMovimientos(MESES_NUM[idx]);
+}
+
+// ─── SUPABASE ─────────────────────────────────────────────────
+async function sbGet(table, params = '') {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+  });
+  return r.json();
+}
+
+async function sbPost(table, body) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation'
+    },
+    body: JSON.stringify(body)
+  });
+  return r.json();
+}
+
+async function sbPatch(table, id, body) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
+    method: 'PATCH',
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation'
+    },
+    body: JSON.stringify(body)
+  });
+  return r.json();
+}
+
+// ─── CARGAR MOVIMIENTOS ───────────────────────────────────────
+async function cargarMovimientos(mes) {
+  const tbody = document.getElementById('tabla-body');
+  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px"><div class="spinner"></div></td></tr>`;
+
+  const data = await sbGet('movimientos', `mes=eq.${mes}&temporada=eq.25-26&order=fecha.asc`);
+  movimientosCache = Array.isArray(data) ? data : [];
+  renderTabla();
+  renderStats();
+}
+
+function renderTabla() {
+  const filtro = document.getElementById('filtro-area').value;
+  const datos = filtro ? movimientosCache.filter(m => m.imputar_a === filtro) : movimientosCache;
+  const tbody = document.getElementById('tabla-body');
+
+  if (!datos.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="icon">📂</div><p>No hay movimientos para este mes. Importa un extracto bancario.</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = datos.map(m => {
+    const badgeClass = m.imputar_a === 'Escuela' ? 'badge-escuela' : m.imputar_a === 'Sociedad' ? 'badge-sociedad' : 'badge-warn';
+    const impClass = m.importe >= 0 ? 'importe-pos' : 'importe-neg';
+    const esVisa = m.concepto_bancario?.includes('TARJETA CREDITO');
+    return `<tr>
+      <td style="white-space:nowrap">${m.fecha}</td>
+      <td style="max-width:320px">${m.concepto_bancario}${esVisa ? ' <span style="font-size:10px;color:var(--muted)">(ver detalle)</span>' : ''}</td>
+      <td style="text-align:right" class="${impClass}">${formatEur(m.importe)}</td>
+      <td><span class="badge ${badgeClass}">${m.imputar_a}</span></td>
+      <td>${m.concepto || '<span style="color:var(--muted)">—</span>'}</td>
+      <td>${m.factura_si ? '<span style="color:var(--sociedad)">✓</span>' : '<span style="color:var(--muted)">—</span>'}</td>
+      <td><button class="btn btn-secondary btn-sm" onclick="abrirEditar('${m.id}')">Editar</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderStats() {
+  const ingresos = movimientosCache.filter(m => m.importe > 0).reduce((s, m) => s + m.importe, 0);
+  const gastos = movimientosCache.filter(m => m.importe < 0).reduce((s, m) => s + m.importe, 0);
+  const pendientes = movimientosCache.filter(m => m.imputar_a === '???').length;
+  document.getElementById('stat-ingresos').textContent = formatEur(ingresos);
+  document.getElementById('stat-gastos').textContent = formatEur(gastos);
+  const res = ingresos + gastos;
+  const el = document.getElementById('stat-resultado');
+  el.textContent = formatEur(res);
+  el.className = 'stat-value ' + (res >= 0 ? 'positive' : 'negative');
+  document.getElementById('stat-pendientes').textContent = pendientes ? `${pendientes} movimientos` : '—';
+}
+
+// ─── EDITAR MODAL ─────────────────────────────────────────────
+function abrirEditar(id) {
+  editando = movimientosCache.find(m => m.id === id);
+  if (!editando) return;
+
+  document.getElementById('modal-concepto-titulo').textContent = editando.concepto_bancario;
+  document.getElementById('modal-fecha-titulo').textContent = `${editando.fecha} · ${formatEur(editando.importe)}`;
+  document.getElementById('edit-area').value = editando.imputar_a || '???';
+  document.getElementById('edit-factura').value = editando.factura_si ? 'true' : 'false';
+  document.getElementById('edit-nfactura').value = editando.nfactura || '';
+  document.getElementById('edit-obs').value = editando.observaciones || '';
+
+  updateConceptoSelect(editando.imputar_a, editando.concepto);
+  document.getElementById('edit-area').onchange = () => {
+    updateConceptoSelect(document.getElementById('edit-area').value, '');
+  };
+
+  const esVisa = editando.concepto_bancario?.includes('TARJETA CREDITO');
+  document.getElementById('visa-section').style.display = esVisa ? 'block' : 'none';
+  if (esVisa) cargarDetalleVisa(id);
+
+  document.getElementById('modal-editar').classList.add('open');
+}
+
+function updateConceptoSelect(area, selected) {
+  const sel = document.getElementById('edit-concepto');
+  const opts = area && CONCEPTOS[area] ? CONCEPTOS[area] : [...CONCEPTOS.Escuela, ...CONCEPTOS.Sociedad];
+  sel.innerHTML = '<option value="">— selecciona —</option>' + opts.map(c =>
+    `<option value="${c}" ${c === selected ? 'selected' : ''}>${c}</option>`
+  ).join('');
+}
+
+async function cargarDetalleVisa(movId) {
+  const data = await sbGet('movimientos_visa', `movimiento_id=eq.${movId}&order=fecha.asc`);
+  renderDetalleVisa(Array.isArray(data) ? data : [], editando.importe);
+}
+
+function renderDetalleVisa(rows, totalPadre) {
+  const tbody = document.getElementById('visa-detail-body');
+  tbody.innerHTML = rows.map((r, i) => `
+    <tr>
+      <td><input type="date" value="${r.fecha}" onchange="updateVisaRow(${i},'fecha',this.value)" style="font-size:12px;padding:4px"></td>
+      <td><input type="text" value="${r.concepto}" onchange="updateVisaRow(${i},'concepto',this.value)" style="width:160px;font-size:12px;padding:4px"></td>
+      <td><input type="number" step="0.01" value="${r.importe}" onchange="updateVisaRow(${i},'importe',parseFloat(this.value));checkVisaTotal(${totalPadre})" style="width:80px;text-align:right;font-size:12px;padding:4px"></td>
+      <td><select onchange="updateVisaRow(${i},'imputar_a',this.value)" style="font-size:12px;padding:4px">
+        ${['Escuela','Sociedad','???'].map(a => `<option ${r.imputar_a===a?'selected':''}>${a}</option>`).join('')}
+      </select></td>
+      <td><select onchange="updateVisaRow(${i},'concepto_basico',this.value)" style="font-size:12px;padding:4px">
+        <option value="">—</option>
+        ${[...CONCEPTOS.Escuela,...CONCEPTOS.Sociedad].map(c=>`<option ${r.concepto_basico===c?'selected':''}>${c}</option>`).join('')}
+      </select></td>
+      <td><button class="btn btn-secondary btn-sm" onclick="removeVisaRow(${i})">✕</button></td>
+    </tr>
+  `).join('');
+  window._visaRows = rows.map(r => ({...r}));
+  checkVisaTotal(totalPadre);
+}
+
+function addVisaRow() {
+  if (!window._visaRows) window._visaRows = [];
+  window._visaRows.push({ fecha: editando.fecha, concepto: '', importe: 0, imputar_a: 'Escuela', concepto_basico: '', movimiento_id: editando.id });
+  renderDetalleVisa(window._visaRows, editando.importe);
+}
+
+function removeVisaRow(i) {
+  window._visaRows.splice(i, 1);
+  renderDetalleVisa(window._visaRows, editando.importe);
+}
+
+function updateVisaRow(i, field, val) {
+  if (!window._visaRows) return;
+  window._visaRows[i][field] = val;
+}
+
+function checkVisaTotal(totalPadre) {
+  if (!window._visaRows) return;
+  const sum = window._visaRows.reduce((s, r) => s + (parseFloat(r.importe) || 0), 0);
+  const diff = Math.abs(sum - Math.abs(totalPadre));
+  const el = document.getElementById('visa-total-check');
+  if (diff < 0.02) {
+    el.innerHTML = `<span style="color:var(--sociedad)">✓ Total cuadra: ${formatEur(sum)}</span>`;
+  } else {
+    el.innerHTML = `<span style="color:var(--warn)">⚠ Total detalle: ${formatEur(sum)} · Cargo banco: ${formatEur(Math.abs(totalPadre))} · Diferencia: ${formatEur(diff)}</span>`;
+  }
+}
+
+async function guardarEdicion() {
+  if (!editando) return;
+  const body = {
+    imputar_a: document.getElementById('edit-area').value,
+    concepto: document.getElementById('edit-concepto').value,
+    factura_si: document.getElementById('edit-factura').value === 'true',
+    nfactura: document.getElementById('edit-nfactura').value || null,
+    observaciones: document.getElementById('edit-obs').value || null,
+  };
+  await sbPatch('movimientos', editando.id, body);
+
+  // Save visa detail
+  const esVisa = editando.concepto_bancario?.includes('TARJETA CREDITO');
+  if (esVisa && window._visaRows) {
+    // Delete existing and reinsert
+    await fetch(`${SUPABASE_URL}/rest/v1/movimientos_visa?movimiento_id=eq.${editando.id}`, {
+      method: 'DELETE',
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+    });
+    if (window._visaRows.length > 0) {
+      await sbPost('movimientos_visa', window._visaRows.map(r => ({...r, movimiento_id: editando.id})));
+    }
+  }
+
+  cerrarModal('modal-editar');
+  toast('Guardado ✓');
+  await cargarMovimientos(MESES_NUM[mesActivo]);
+}
+
+function cerrarModal(id) {
+  document.getElementById(id).classList.remove('open');
+  editando = null;
+  window._visaRows = null;
+}
+
+// ─── IMPORT ───────────────────────────────────────────────────
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag');
+  handleFile(e.dataTransfer.files[0]);
+}
+
+function handleFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const wb = XLSX.read(e.target.result, { type: 'binary', cellDates: true });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+
+    // Find header row (row with 'F. Operativa')
+    let headerIdx = rows.findIndex(r => r && r[0] === 'F. Operativa');
+    if (headerIdx < 0) headerIdx = 8; // fallback
+
+    const movs = [];
+    for (let i = headerIdx + 1; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r || !r[0] || !r[3]) continue;
+      const fechaRaw = r[0];
+      const fecha = fechaRaw instanceof Date ? fechaRaw.toISOString().split('T')[0]
+        : typeof fechaRaw === 'string' ? parseFechaES(fechaRaw) : null;
+      if (!fecha) continue;
+      const importe = parseFloat(String(r[3]).replace(',', '.'));
+      if (isNaN(importe)) continue;
+      const conceptoBancario = String(r[1] || '').trim();
+      const mes = parseInt(fecha.split('-')[1]);
+      const cat = categorizar(conceptoBancario);
+      movs.push({
+        fecha,
+        concepto_bancario: conceptoBancario,
+        importe,
+        imputar_a: cat.area,
+        concepto: cat.concepto,
+        mes,
+        temporada: '25-26',
+        factura_si: false,
+        es_visa: conceptoBancario.includes('TARJETA CREDITO'),
+      });
+    }
+
+    pendingImport = movs;
+    renderPreview(movs, rows);
+  };
+  reader.readAsBinaryString(file);
+}
+
+function parseFechaES(s) {
+  const m = s.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : null;
+}
+
+function renderPreview(movs, rows) {
+  document.getElementById('preview-area').style.display = 'block';
+  document.getElementById('preview-count').textContent = `${movs.length} movimientos detectados · `;
+  // Extract period from header
+  const periodoRow = rows.find(r => r && String(r[0]).includes('Desde'));
+  document.getElementById('preview-period').textContent = periodoRow ? String(periodoRow[0]) : '';
+
+  const tbody = document.getElementById('preview-body');
+  tbody.innerHTML = movs.map(m => {
+    const badgeClass = m.imputar_a === 'Escuela' ? 'badge-escuela' : m.imputar_a === 'Sociedad' ? 'badge-sociedad' : 'badge-warn';
+    const impClass = m.importe >= 0 ? 'importe-pos' : 'importe-neg';
+    return `<tr>
+      <td style="white-space:nowrap">${m.fecha}</td>
+      <td style="max-width:300px;font-size:12px">${m.concepto_bancario}</td>
+      <td style="text-align:right" class="${impClass}">${formatEur(m.importe)}</td>
+      <td><span class="badge ${badgeClass}">${m.imputar_a}</span></td>
+      <td style="font-size:12px">${m.concepto || '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function cancelarImport() {
+  pendingImport = [];
+  document.getElementById('preview-area').style.display = 'none';
+  document.getElementById('file-input').value = '';
+}
+
+async function guardarMovimientos() {
+  if (!pendingImport.length) return;
+  const btn = document.getElementById('btn-guardar');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Guardando...';
+
+  await sbPost('movimientos', pendingImport);
+
+  cancelarImport();
+  btn.disabled = false;
+  btn.textContent = 'Guardar en base de datos';
+  toast(`${pendingImport.length} movimientos guardados ✓`);
+
+  // Switch to movimientos tab
+  const mes = pendingImport[0]?.mes;
+  if (mes) {
+    const idx = MESES_NUM.indexOf(mes);
+    showPage('movimientos');
+    if (idx >= 0) selectMes(idx);
+  }
+}
+
+// ─── RESUMEN ──────────────────────────────────────────────────
+async function cargarResumen() {
+  const data = await sbGet('movimientos', 'temporada=eq.25-26&order=fecha.asc');
+  const movs = Array.isArray(data) ? data : [];
+
+  renderResumenArea(movs, 'Escuela', 'escuela');
+  renderResumenArea(movs, 'Sociedad', 'sociedad');
+}
+
+function renderResumenArea(movs, area, key) {
+  const filtrados = movs.filter(m => m.imputar_a === area);
+  const porConcepto = {};
+  filtrados.forEach(m => {
+    const c = m.concepto || 'Sin concepto';
+    porConcepto[c] = (porConcepto[c] || 0) + m.importe;
+  });
+
+  const ingresos = Object.entries(porConcepto).filter(([,v]) => v > 0).sort((a,b) => b[1]-a[1]);
+  const gastos = Object.entries(porConcepto).filter(([,v]) => v < 0).sort((a,b) => a[1]-b[1]);
+  const total = filtrados.reduce((s,m) => s + m.importe, 0);
+
+  document.getElementById(`resumen-${key}-ingresos`).innerHTML =
+    '<div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px">INGRESOS</div>' +
+    ingresos.map(([c,v]) => `<div class="concepto-row"><span class="label">${c}</span><span class="valor importe-pos">${formatEur(v)}</span></div>`).join('');
+
+  document.getElementById(`resumen-${key}-gastos`).innerHTML =
+    '<div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px">GASTOS</div>' +
+    gastos.map(([c,v]) => `<div class="concepto-row"><span class="label">${c}</span><span class="valor importe-neg">${formatEur(v)}</span></div>`).join('');
+
+  const elTotal = document.getElementById(`resumen-${key}-total`);
+  elTotal.textContent = formatEur(total);
+  elTotal.className = 'valor ' + (total >= 0 ? 'importe-pos' : 'importe-neg');
+}
+
+// ─── EXPORT EXCEL ─────────────────────────────────────────────
+function exportarExcel() {
+  if (!movimientosCache.length) return;
+  const rows = [['Fecha','Concepto Bancario','Importe','Imputar a:','concepto:','Observaciones','Factura SI/NO','Nº Factura']];
+  movimientosCache.forEach(m => {
+    rows.push([m.fecha, m.concepto_bancario, m.importe, m.imputar_a, m.concepto, m.observaciones, m.factura_si ? 'SI' : 'NO', m.nfactura || '']);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, `${MESES[mesActivo]} 2026`);
+  XLSX.writeFile(wb, `Movimientos_${MESES[mesActivo]}_CCI.xlsx`);
+}
+
+function exportarResumen() { toast('Próximamente'); }
+
+// ─── UTILS ────────────────────────────────────────────────────
+function formatEur(n) {
+  if (n == null) return '—';
+  return new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) + ' €';
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+</script>
+</body>
+</html>
