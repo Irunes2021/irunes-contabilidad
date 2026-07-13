@@ -408,20 +408,46 @@
     <div class="nav-tab active" onclick="showPage('movimientos')">Movimientos</div>
     <div class="nav-tab" onclick="showPage('resumen')">Resumen</div>
     <div class="nav-tab" onclick="showPage('importar')">Importar XLS</div>
+    <div class="nav-tab" onclick="showPage('config')">Configuración</div>
+    <div class="nav-tab" onclick="showPage('tarjetas')">Tarjetas</div>
   </div>
 
   <main>
     <!-- MOVIMIENTOS PAGE -->
     <div class="page active" id="page-movimientos">
-      <div class="month-nav" id="month-nav"></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+        <div class="month-nav" id="month-nav" style="margin-bottom:0;flex:1"></div>
+        <select id="filtro-mov-area" onchange="aplicarFiltroMovimientos()" style="font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:6px">
+          <option value="">Todas las áreas</option>
+          <option value="Escuela">Escuela</option>
+          <option value="Sociedad">Sociedad</option>
+          <option value="Visas">Visas</option>
+          <option value="???">Sin categorizar</option>
+        </select>
+        <select id="filtro-mov-mes-sel" onchange="aplicarFiltroMovimientos()" style="font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:6px">
+          <option value="">Todos los meses</option>
+          <option value="11">Noviembre</option>
+          <option value="12">Diciembre</option>
+          <option value="1">Enero</option>
+          <option value="2">Febrero</option>
+          <option value="3">Marzo</option>
+          <option value="4">Abril</option>
+          <option value="5">Mayo</option>
+          <option value="6">Junio</option>
+          <option value="7">Julio</option>
+          <option value="8">Agosto</option>
+          <option value="9">Septiembre</option>
+          <option value="10">Octubre</option>
+        </select>
+      </div>
 
       <div class="summary-grid" id="mes-stats">
         <div class="stat-card">
-          <div class="stat-label">Ingresos del mes</div>
+          <div class="stat-label">Ingresos</div>
           <div class="stat-value positive" id="stat-ingresos">—</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Gastos del mes</div>
+          <div class="stat-label">Gastos</div>
           <div class="stat-value negative" id="stat-gastos">—</div>
         </div>
         <div class="stat-card">
@@ -438,12 +464,6 @@
         <div class="card-header">
           <div class="card-title" id="tabla-titulo">Movimientos</div>
           <div style="display:flex;gap:8px">
-            <select id="filtro-area" onchange="renderTabla()">
-              <option value="">Todas las áreas</option>
-              <option value="Escuela">Escuela</option>
-              <option value="Sociedad">Sociedad</option>
-              <option value="???">Sin categorizar</option>
-            </select>
             <button class="btn btn-secondary btn-sm" onclick="exportarExcel()">⬇ Excel</button>
           </div>
         </div>
@@ -457,7 +477,6 @@
                 <th>Área</th>
                 <th>Concepto</th>
                 <th>Factura</th>
-                <th></th>
               </tr>
             </thead>
             <tbody id="tabla-body">
@@ -521,6 +540,25 @@
             <p style="margin-top:6px;font-size:12px">Formato: extracto BBK (.xls)</p>
           </div>
           <input type="file" id="file-input" accept=".xls,.xlsx" onchange="handleFile(this.files[0])">
+          <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+            <p style="font-size:12px;color:var(--muted);margin-bottom:8px">O importa un fichero JSON pre-categorizado:</p>
+            <input type="file" id="file-input-json" accept=".json" onchange="handleJsonFile(this.files[0])" style="font-size:12px">
+          </div>
+
+          <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border)">
+            <p style="font-weight:600;font-size:13px;margin-bottom:6px">Extractos de tarjetas (Visa / Viat)</p>
+            <p style="color:var(--muted);font-size:13px;margin-bottom:14px">Sube uno o varios XLS de tarjetas. Se vincularán automáticamente al cargo correspondiente en el extracto bancario.</p>
+            <div class="upload-zone" id="upload-zone-visa" onclick="document.getElementById('file-input-visa').click()"
+                 ondragover="event.preventDefault();this.classList.add('drag')"
+                 ondragleave="this.classList.remove('drag')"
+                 ondrop="handleDropVisa(event)">
+              <div class="upload-icon">💳</div>
+              <p><strong>Haz clic para seleccionar</strong> o arrastra los ficheros XLS aquí</p>
+              <p style="margin-top:6px;font-size:12px">Visa o Viat — puedes subir varios a la vez</p>
+            </div>
+            <input type="file" id="file-input-visa" accept=".xls,.xlsx" multiple onchange="handleFilesVisa(this.files)">
+            <div id="preview-visa-area" style="display:none;margin-top:16px"></div>
+          </div>
 
           <div id="preview-area" style="display:none;margin-top:20px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -548,6 +586,86 @@
               </table>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+    <!-- TARJETAS PAGE -->
+    <div class="page" id="page-tarjetas">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <h2 style="font-size:18px;font-weight:700">Movimientos de tarjetas</h2>
+        <div style="display:flex;gap:10px;align-items:center">
+          <select id="filtro-tarjeta-mes" onchange="cargarTarjetas()" style="font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:6px">
+            <option value="">Todos los meses</option>
+            <option value="11">Noviembre</option>
+            <option value="12">Diciembre</option>
+            <option value="1">Enero</option>
+            <option value="2">Febrero</option>
+            <option value="3">Marzo</option>
+            <option value="4">Abril</option>
+            <option value="5">Mayo</option>
+            <option value="6">Junio</option>
+            <option value="7">Julio</option>
+            <option value="8">Agosto</option>
+            <option value="9">Septiembre</option>
+            <option value="10">Octubre</option>
+          </select>
+          <select id="filtro-tarjeta-titular" onchange="cargarTarjetas()" style="font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:6px">
+            <option value="">Todos los titulares</option>
+          </select>
+          <button class="btn btn-secondary btn-sm" onclick="exportarTarjetas()">⬇ Excel</button>
+        </div>
+      </div>
+
+      <!-- Resumen por titular -->
+      <div id="tarjetas-resumen" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px"></div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title" id="tarjetas-titulo">Movimientos de tarjetas</div>
+          <div id="tarjetas-total" style="font-weight:700;color:var(--accent)"></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Titular</th>
+                <th>Tipo</th>
+                <th>Concepto</th>
+                <th>Localidad</th>
+                <th style="text-align:right">Importe</th>
+                <th>Área</th>
+                <th>Concepto contable</th>
+              </tr>
+            </thead>
+            <tbody id="tarjetas-body">
+              <tr><td colspan="8"><div class="empty-state"><div class="icon">💳</div><p>Importa los extractos de tarjetas para verlos aquí</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIG PAGE -->
+    <div class="page" id="page-config">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h2 style="font-size:18px;font-weight:700">Conceptos contables</h2>
+        <button class="btn btn-primary" onclick="abrirNuevoConcepto()">+ Nuevo concepto</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="card">
+          <div class="card-header"><div class="card-title" style="color:var(--escuela)">Escuela de Ciclismo</div></div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Concepto</th><th>Orden</th><th></th></tr></thead>
+            <tbody id="config-escuela-body"></tbody>
+          </table></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title" style="color:var(--sociedad)">Sociedad Gastronómica</div></div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Concepto</th><th>Orden</th><th></th></tr></thead>
+            <tbody id="config-sociedad-body"></tbody>
+          </table></div>
         </div>
       </div>
     </div>
@@ -626,6 +744,78 @@
   </div>
 </div>
 
+<!-- MODAL EDITAR VISA -->
+<div class="modal-overlay" id="modal-editar-visa">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <div>
+        <div style="font-weight:700;font-size:15px" id="modal-visa-titulo"></div>
+        <div style="font-size:12px;color:var(--muted)" id="modal-visa-subtitulo"></div>
+      </div>
+      <button class="modal-close" onclick="cerrarModal('modal-editar-visa')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">ÁREA</label>
+          <select id="visa-edit-area" style="width:100%" onchange="updateVisaConceptoSelect()">
+            <option value="Escuela">Escuela</option>
+            <option value="Sociedad">Sociedad</option>
+            <option value="???">Sin categorizar</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">CONCEPTO</label>
+          <select id="visa-edit-concepto" style="width:100%">
+            <option value="">— selecciona —</option>
+          </select>
+        </div>
+        <div style="grid-column:1/-1">
+          <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">OBSERVACIONES</label>
+          <input type="text" id="visa-edit-obs" style="width:100%" placeholder="opcional">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="cerrarModal('modal-editar-visa')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarEdicionVisa()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONCEPTO -->
+<div class="modal-overlay" id="modal-concepto">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div style="font-weight:700;font-size:15px" id="modal-concepto-title">Nuevo concepto</div>
+      <button class="modal-close" onclick="cerrarModal('modal-concepto')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;gap:14px">
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">ÁREA</label>
+          <select id="mc-area" style="width:100%">
+            <option value="Escuela">Escuela</option>
+            <option value="Sociedad">Sociedad</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">NOMBRE</label>
+          <input type="text" id="mc-nombre" style="width:100%" placeholder="Nombre del concepto">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">ORDEN</label>
+          <input type="number" id="mc-orden" style="width:100%" value="99">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="cerrarModal('modal-concepto')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarConcepto()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -635,23 +825,16 @@ const SUPABASE_URL = 'https://dbydtwkzknbpifneznsu.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRieWR0d2t6a25icGlmbmV6bnN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMjMwODIsImV4cCI6MjA5MDc5OTA4Mn0.HcTWBEaI-2EH66mAUAaEM2ppzDG3eCd1ANjopNZdt1g';
 const PIN = '2121$';
 
-// ─── CONCEPTOS ───────────────────────────────────────────────
-const CONCEPTOS = {
-  Escuela: [
-    'Monitores y entrenadores','Cuota corredores','Cuotas socios','Licencias',
-    'Ropa','Hoteles, Comidas y Salidas','Gasolina','Autopistas','Parking',
-    'Seguros','Reparaciones y ITV','Impuestos coches','Material deportivo',
-    'Reconocimientos médicos','Subvenciones','Patrocinios','Premios y dietas',
-    'San Pedro','Carreras Txikis','Lotería navidad','Venta de ropa',
-    'Presentación temporada','Juanma Garate','Velodromo','Txozna',
-    'Web e Internet','Multas y embargos','Devoluciones','Visas','Varios Escuela'
-  ],
-  Sociedad: [
-    'Bodega','Luz','Gas','Agua','Teléfono e Internet','Seguros Sociedad',
-    'Limpieza','TPV y Comisiones','Mantenimiento Sociedad','IBI',
-    'Comunidad','Cocina','Gastos Sociedad Varios'
-  ]
-};
+// ─── CONCEPTOS (cargados desde Supabase) ─────────────────────
+let CONCEPTOS = { Escuela: [], Sociedad: [] };
+
+async function cargarConceptos() {
+  const data = await sbGet('conceptos', 'activo=eq.true&order=area.asc,orden.asc');
+  if (!Array.isArray(data)) return;
+  CONCEPTOS.Escuela = data.filter(c => c.area === 'Escuela').map(c => c.nombre);
+  CONCEPTOS.Sociedad = data.filter(c => c.area === 'Sociedad').map(c => c.nombre);
+  CONCEPTOS.Visas = data.filter(c => c.area === 'Visas').map(c => c.nombre);
+}
 
 // ─── REGLAS CATEGORIZACIÓN AUTO ──────────────────────────────
 const REGLAS = [
@@ -670,7 +853,7 @@ const REGLAS = [
   { match: /TRANSFERENCIA.*IRUN$|AYUNTAMIENTO/i, area: 'Escuela', concepto: 'Subvenciones' },
   // Escuela - gastos
   { match: /TRANSFERENCIA A (Jon Morillo|Dani |Daniel Iglesias|Iker Amantegi|Iker Ginzo|Gorka Zamar|Julen Mendi|Koldo Alzaga|Eider Etxaniz|Mikel Maeso|andoitz|Oscar Ginzo|Nestor Corre|Cristina)/i, area: 'Escuela', concepto: 'Monitores y entrenadores' },
-  { match: /TARJETA CREDITO CLUB CICLISTA/i, area: 'Escuela', concepto: 'Autopistas' },
+  { match: /TARJETA CREDITO/i, area: 'Visas', concepto: 'Visas' },
   { match: /EASY GAS|GASOLINA|PETROL/i, area: 'Escuela', concepto: 'Gasolina' },
   { match: /EUSKADI LOW COST|LOW COST EUSKADI/i, area: 'Escuela', concepto: 'Hoteles, Comidas y Salidas' },
   { match: /FUNDACION VASCA.*CALIDAD/i, area: 'Escuela', concepto: 'Seguros' },
@@ -706,6 +889,8 @@ function showPage(id) {
   document.getElementById('page-' + id).classList.add('active');
   event.target.classList.add('active');
   if (id === 'resumen') cargarResumen();
+  if (id === 'config') cargarConfig();
+  if (id === 'tarjetas') cargarTarjetas();
 }
 
 // ─── STATE ────────────────────────────────────────────────────
@@ -718,8 +903,8 @@ let pendingImport = [];
 
 // ─── INIT ─────────────────────────────────────────────────────
 async function init() {
+  await cargarConceptos();
   renderMonthNav();
-  // Select current month
   const now = new Date();
   const mesIdx = MESES_NUM.indexOf(now.getMonth() + 1);
   if (mesIdx >= 0) selectMes(mesIdx);
@@ -737,8 +922,35 @@ async function selectMes(idx) {
   document.querySelectorAll('.month-btn').forEach((b,i) => {
     b.classList.toggle('active', i === idx);
   });
-  document.getElementById('tabla-titulo').textContent = `Movimientos — ${MESES[idx]}`;
-  await cargarMovimientos(MESES_NUM[idx]);
+  // Sync month selector
+  document.getElementById('filtro-mov-mes-sel').value = MESES_NUM[idx];
+  await aplicarFiltroMovimientos();
+}
+
+async function aplicarFiltroMovimientos() {
+  const area = document.getElementById('filtro-mov-area').value;
+  const mesVal = document.getElementById('filtro-mov-mes-sel').value;
+
+  let params = 'temporada=eq.25-26&order=fecha.asc';
+  if (mesVal) params += `&mes=eq.${mesVal}`;
+  if (area) params += `&imputar_a=eq.${encodeURIComponent(area)}`;
+
+  // Update month button highlight
+  if (mesVal) {
+    const idx = MESES_NUM.indexOf(parseInt(mesVal));
+    mesActivo = idx >= 0 ? idx : null;
+    document.querySelectorAll('.month-btn').forEach((b,i) => b.classList.toggle('active', i === idx));
+    document.getElementById('tabla-titulo').textContent = `Movimientos — ${mesVal ? MESES[MESES_NUM.indexOf(parseInt(mesVal))] : 'Todos'}${area ? ' · ' + area : ''}`;
+  } else {
+    mesActivo = null;
+    document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tabla-titulo').textContent = `Movimientos — Todos los meses${area ? ' · ' + area : ''}`;
+  }
+
+  const data = await sbGet('movimientos', params);
+  movimientosCache = Array.isArray(data) ? data : [];
+  renderTabla();
+  renderStats();
 }
 
 // ─── SUPABASE ─────────────────────────────────────────────────
@@ -780,8 +992,7 @@ async function sbPatch(table, id, body) {
 // ─── CARGAR MOVIMIENTOS ───────────────────────────────────────
 async function cargarMovimientos(mes) {
   const tbody = document.getElementById('tabla-body');
-  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px"><div class="spinner"></div></td></tr>`;
-
+  tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px"><div class="spinner"></div></td></tr>`;
   const data = await sbGet('movimientos', `mes=eq.${mes}&temporada=eq.25-26&order=fecha.asc`);
   movimientosCache = Array.isArray(data) ? data : [];
   renderTabla();
@@ -789,8 +1000,7 @@ async function cargarMovimientos(mes) {
 }
 
 function renderTabla() {
-  const filtro = document.getElementById('filtro-area').value;
-  const datos = filtro ? movimientosCache.filter(m => m.imputar_a === filtro) : movimientosCache;
+  const datos = movimientosCache;
   const tbody = document.getElementById('tabla-body');
 
   if (!datos.length) {
@@ -799,24 +1009,39 @@ function renderTabla() {
   }
 
   tbody.innerHTML = datos.map(m => {
-    const badgeClass = m.imputar_a === 'Escuela' ? 'badge-escuela' : m.imputar_a === 'Sociedad' ? 'badge-sociedad' : 'badge-warn';
     const impClass = m.importe >= 0 ? 'importe-pos' : 'importe-neg';
-    const esVisa = m.concepto_bancario?.includes('TARJETA CREDITO');
+    const conceptos = m.imputar_a && CONCEPTOS[m.imputar_a] ? CONCEPTOS[m.imputar_a] : [...CONCEPTOS.Escuela, ...CONCEPTOS.Sociedad];
     return `<tr>
-      <td style="white-space:nowrap">${m.fecha}</td>
-      <td style="max-width:320px">${m.concepto_bancario}${esVisa ? ' <span style="font-size:10px;color:var(--muted)">(ver detalle)</span>' : ''}</td>
+      <td style="white-space:nowrap;font-size:12px">${m.fecha}</td>
+      <td style="max-width:280px;font-size:12px">${m.concepto_bancario}</td>
       <td style="text-align:right" class="${impClass}">${formatEur(m.importe)}</td>
-      <td><span class="badge ${badgeClass}">${m.imputar_a}</span></td>
-      <td>${m.concepto || '<span style="color:var(--muted)">—</span>'}</td>
-      <td>${m.factura_si ? '<span style="color:var(--sociedad)">✓</span>' : '<span style="color:var(--muted)">—</span>'}</td>
-      <td><button class="btn btn-secondary btn-sm" onclick="abrirEditar('${m.id}')">Editar</button></td>
+      <td>
+        <select onchange="guardarCampoMov('${m.id}','imputar_a',this.value,this)" style="font-size:12px;padding:3px 6px;border-radius:5px;border:1px solid var(--border);background:${m.imputar_a==='Escuela'?'#eff6ff':m.imputar_a==='Sociedad'?'#f0fdf4':m.imputar_a==='Visas'?'#f5f3ff':'#fffbeb'};color:${m.imputar_a==='Escuela'?'var(--escuela)':m.imputar_a==='Sociedad'?'var(--sociedad)':m.imputar_a==='Visas'?'#7c3aed':'var(--warn)'}">
+          <option value="Escuela" ${m.imputar_a==='Escuela'?'selected':''}>Escuela</option>
+          <option value="Sociedad" ${m.imputar_a==='Sociedad'?'selected':''}>Sociedad</option>
+          <option value="Visas" ${m.imputar_a==='Visas'?'selected':''}>Visas</option>
+          <option value="???" ${m.imputar_a==='???'?'selected':''}>???</option>
+        </select>
+      </td>
+      <td>
+        <select onchange="guardarCampoMov('${m.id}','concepto',this.value,this)" style="font-size:12px;padding:3px 6px;border-radius:5px;border:1px solid var(--border);max-width:180px">
+          <option value="">— concepto —</option>
+          ${(m.imputar_a && CONCEPTOS[m.imputar_a] ? CONCEPTOS[m.imputar_a] : [...CONCEPTOS.Escuela,...CONCEPTOS.Sociedad,...(CONCEPTOS.Visas||[])]).map(c=>`<option value="${c}" ${c===m.concepto?'selected':''}>${c}</option>`).join('')}
+        </select>
+      </td>
+      <td style="text-align:center">
+        <select onchange="guardarCampoMov('${m.id}','factura_si',this.value==='true',this)" style="font-size:12px;padding:3px 6px;border-radius:5px;border:1px solid var(--border)">
+          <option value="false" ${!m.factura_si?'selected':''}>No</option>
+          <option value="true" ${m.factura_si?'selected':''}>Sí</option>
+        </select>
+      </td>
     </tr>`;
   }).join('');
 }
 
 function renderStats() {
-  const ingresos = movimientosCache.filter(m => m.importe > 0).reduce((s, m) => s + m.importe, 0);
-  const gastos = movimientosCache.filter(m => m.importe < 0).reduce((s, m) => s + m.importe, 0);
+  const ingresos = movimientosCache.filter(m => m.importe > 0 && m.imputar_a !== '???').reduce((s, m) => s + m.importe, 0);
+  const gastos = movimientosCache.filter(m => m.importe < 0 && m.imputar_a !== '???').reduce((s, m) => s + m.importe, 0);
   const pendientes = movimientosCache.filter(m => m.imputar_a === '???').length;
   document.getElementById('stat-ingresos').textContent = formatEur(ingresos);
   document.getElementById('stat-gastos').textContent = formatEur(gastos);
@@ -963,21 +1188,38 @@ function handleFile(file) {
     const ws = wb.Sheets[wb.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
 
-    // Find header row (row with 'F. Operativa')
-    let headerIdx = rows.findIndex(r => r && r[0] === 'F. Operativa');
-    if (headerIdx < 0) headerIdx = 8; // fallback
+    // Find header row - search for 'F. Operativa' flexibly
+    let headerIdx = -1;
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      if (r && r[0] && String(r[0]).trim().toLowerCase().includes('f. operativa')) {
+        headerIdx = i; break;
+      }
+    }
+    if (headerIdx < 0) headerIdx = 8; // fallback BBK format
 
     const movs = [];
     for (let i = headerIdx + 1; i < rows.length; i++) {
       const r = rows[i];
-      if (!r || !r[0] || !r[3]) continue;
+      if (!r) continue;
       const fechaRaw = r[0];
-      const fecha = fechaRaw instanceof Date ? fechaRaw.toISOString().split('T')[0]
-        : typeof fechaRaw === 'string' ? parseFechaES(fechaRaw) : null;
+      if (!fechaRaw) continue;
+      let fecha = null;
+      if (fechaRaw instanceof Date) {
+        fecha = fechaRaw.toISOString().split('T')[0];
+      } else if (typeof fechaRaw === 'string') {
+        fecha = parseFechaES(fechaRaw.trim());
+      } else if (typeof fechaRaw === 'number') {
+        const d = new Date(Math.round((fechaRaw - 25569) * 86400 * 1000));
+        fecha = d.toISOString().split('T')[0];
+      }
       if (!fecha) continue;
-      const importe = parseFloat(String(r[3]).replace(',', '.'));
+      const importeRaw = r[3];
+      if (importeRaw === null || importeRaw === undefined || importeRaw === '') continue;
+      const importe = parseFloat(String(importeRaw).replace(',', '.'));
       if (isNaN(importe)) continue;
       const conceptoBancario = String(r[1] || '').trim();
+      if (!conceptoBancario) continue;
       const mes = parseInt(fecha.split('-')[1]);
       const cat = categorizar(conceptoBancario);
       movs.push({
@@ -1035,43 +1277,370 @@ async function guardarMovimientos() {
   if (!pendingImport.length) return;
   const btn = document.getElementById('btn-guardar');
   btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Comprobando duplicados...';
+
+  // Get existing movements: fetch by fecha+importe+concepto to detect dupes
+  const fechas = [...new Set(pendingImport.map(m => m.fecha))];
+  const minFecha = fechas.sort()[0];
+  const maxFecha = fechas.sort().slice(-1)[0];
+  const existing = await sbGet('movimientos', `fecha=gte.${minFecha}&fecha=lte.${maxFecha}&temporada=eq.25-26&select=fecha,concepto_bancario,importe`);
+  const existingSet = new Set(
+    (Array.isArray(existing) ? existing : []).map(m => `${m.fecha}|${m.concepto_bancario}|${m.importe}`)
+  );
+
+  const nuevos = pendingImport.filter(m => !existingSet.has(`${m.fecha}|${m.concepto_bancario}|${m.importe}`));
+  const duplicados = pendingImport.length - nuevos.length;
+
+  if (!nuevos.length) {
+    btn.disabled = false;
+    btn.textContent = 'Guardar en base de datos';
+    toast('Todos los movimientos ya existen, nada que guardar.');
+    return;
+  }
+
   btn.innerHTML = '<div class="spinner"></div> Guardando...';
+  await sbPost('movimientos', nuevos);
 
-  await sbPost('movimientos', pendingImport);
-
+  const primerMes = nuevos[0]?.mes;
   cancelarImport();
   btn.disabled = false;
   btn.textContent = 'Guardar en base de datos';
-  toast(`${pendingImport.length} movimientos guardados ✓`);
+  toast(`${nuevos.length} guardados${duplicados ? `, ${duplicados} duplicados omitidos` : ''} ✓`);
 
-  // Switch to movimientos tab
-  const mes = pendingImport[0]?.mes;
-  if (mes) {
-    const idx = MESES_NUM.indexOf(mes);
+  if (primerMes) {
+    const idx = MESES_NUM.indexOf(primerMes);
     showPage('movimientos');
     if (idx >= 0) selectMes(idx);
   }
 }
 
+// ─── JSON IMPORT ──────────────────────────────────────────────
+async function handleJsonFile(file) {
+  if (!file) return;
+  const text = await file.text();
+  const records = JSON.parse(text);
+  pendingImport = records;
+  renderPreview(records, []);
+  document.getElementById('preview-count').textContent = `${records.length} movimientos · `;
+  document.getElementById('preview-period').textContent = 'Desde JSON pre-categorizado';
+  document.getElementById('preview-area').style.display = 'block';
+}
+
+// ─── INLINE SAVE ──────────────────────────────────────────────
+async function guardarCampoMov(id, campo, valor, el) {
+  const body = { [campo]: valor };
+  // If changing area, reset concepto
+  if (campo === 'imputar_a') {
+    body.concepto = '';
+    // Update concepto select options in same row
+    const row = el.closest('tr');
+    const conceptoSel = row.querySelectorAll('select')[1];
+    const opts = CONCEPTOS[valor] || [...CONCEPTOS.Escuela, ...CONCEPTOS.Sociedad];
+    conceptoSel.innerHTML = '<option value="">— concepto —</option>' + opts.map(c => `<option value="${c}">${c}</option>`).join('');
+    el.style.background = valor==='Escuela'?'#eff6ff':valor==='Sociedad'?'#f0fdf4':valor==='Visas'?'#f5f3ff':'#fffbeb';
+    el.style.color = valor==='Escuela'?'var(--escuela)':valor==='Sociedad'?'var(--sociedad)':valor==='Visas'?'#7c3aed':'var(--warn)';
+  }
+  await sbPatch('movimientos', id, body);
+  // Update cache
+  const m = movimientosCache.find(x => x.id === id);
+  if (m) { m[campo] = valor; if (campo === 'imputar_a') m.concepto = ''; }
+  renderStats();
+}
+
+async function guardarCampoVisa(id, campo, valor, el) {
+  const body = { [campo]: valor };
+  if (campo === 'imputar_a') {
+    body.concepto_basico = '';
+    const row = el.closest('tr');
+    const conceptoSel = row.querySelectorAll('select')[1];
+    const opts = CONCEPTOS[valor] || [...CONCEPTOS.Escuela, ...CONCEPTOS.Sociedad];
+    conceptoSel.innerHTML = '<option value="">— concepto —</option>' + opts.map(c => `<option value="${c}">${c}</option>`).join('');
+  }
+  await fetch(`${SUPABASE_URL}/rest/v1/movimientos_visa?id=eq.${id}`, {
+    method: 'PATCH',
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const m = tarjetasCache.find(x => x.id === id);
+  if (m) { m[campo] = valor; if (campo === 'imputar_a') m.concepto_basico = ''; }
+}
+
+// ─── IMPORT VISAS ────────────────────────────────────────────
+let pendingVisas = []; // [{titular, tipo, movimientos:[]}]
+
+function handleDropVisa(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone-visa').classList.remove('drag');
+  handleFilesVisa(e.dataTransfer.files);
+}
+
+function handleFilesVisa(files) {
+  pendingVisas = [];
+  document.getElementById('preview-visa-area').style.display = 'none';
+  let processed = 0;
+  Array.from(files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const wb = XLSX.read(e.target.result, { type: 'binary' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+      const parsed = parseTarjeta(rows, file.name);
+      window._lastParsed = {filename: file.name, rows: rows.slice(0,12), parsed};
+      if (parsed) pendingVisas.push(parsed);
+      processed++;
+      if (processed === files.length) renderPreviewVisas();
+    };
+    reader.readAsBinaryString(file);
+  });
+}
+
+function parseTarjeta(rows, filename) {
+  // Detect format: viat has 'VIA T' in row 12, visa has titular in row 6
+  // Detect viat by filename (6039 prefix) or by 'MOVIMIENTOS DE CREDITO' structure
+  const isViat = filename.toLowerCase().includes('6039') || rows.some(r => r && r.some(c => c && String(c).includes('VIA T')));
+  const tipo = isViat ? 'Viat' : 'Visa';
+
+  // Get titular
+  let titular = 'Desconocido';
+  if (!isViat) {
+    // Visa: get first apellido from row 6
+    const titRow = rows[6];
+    if (titRow && titRow[1]) {
+      titular = String(titRow[1]).split(',')[0].split(' ')[0];
+      titular = titular.charAt(0) + titular.slice(1).toLowerCase();
+    }
+  } else {
+    // Viat: use card number from row 5 (e.g. "6039________7015" → "Viat-7015")
+    // Read card number from row 5 col 1 (cell B6 in Excel: "6039      7016")
+    const cardCell = rows[5] && rows[5][1] ? String(rows[5][1]).trim() : '';
+    const cardDigits = cardCell.replace(/\s+/g, '').slice(-4);
+    titular = cardDigits ? 'Viat-' + cardDigits : 'Viat-' + filename.replace('.xls','').slice(-4);
+  }
+
+  // Find header row
+  let headerIdx = rows.findIndex(r => r && r[0] === 'FECHA' && r[1] === 'CONCEPTO');
+  if (headerIdx < 0) return null;
+
+  // Parse movements
+  const movs = [];
+  const currentYear = new Date().getFullYear(); // 2026
+  for (let i = headerIdx + 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || !r[0] || !r[1]) continue;
+    const fechaRaw = String(r[0]).trim();
+    if (!fechaRaw.match(/^\d{2}\/\d{2}$/)) continue;
+
+    // Parse DD/MM → infer year: month >= 11 → 2025, else 2026
+    const [dd, mm] = fechaRaw.split('/').map(Number);
+    const year = mm >= 11 ? currentYear - 1 : currentYear;
+    const fecha = `${year}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}`;
+
+    const concepto = String(r[1] || '').trim();
+    const localidad = String(r[2] || '').trim();
+    const importeRaw = String(r[4] || r[3] || '').replace('.','').replace(',','.').trim();
+    const importe = parseFloat(importeRaw);
+    if (isNaN(importe) || importe <= 0) continue;
+
+    // Auto-categorize
+    let conceptoBasico = '';
+    let area = 'Escuela';
+    if (isViat || /BIDEGI|AP\d|AUTOPISTA|AUTOVIA|PEAJE|SARASA|INTERBIAK|VASCO ARAGONESA/i.test(concepto)) {
+      conceptoBasico = 'Autopistas';
+    } else if (/EASY GAS|GASOLINERA|PETROL|ALCAMPO.*GAS|E\.S\.|ESTACION SERVICIO|ESKORTZA/i.test(concepto)) {
+      conceptoBasico = 'Gasolina';
+    } else if (/ITV/i.test(concepto)) {
+      conceptoBasico = 'Reparaciones y ITV';
+    } else if (/DGT|SANCION|MULTA/i.test(concepto)) {
+      conceptoBasico = 'Multas y embargos';
+    } else if (/TULOTERO|LOTERIA|ONCE/i.test(concepto)) {
+      conceptoBasico = 'Lotería navidad';
+    } else if (/MAKRO|MERCADONA|CARREFOUR|ALCAMPO|SUPERMERCADO/i.test(concepto)) {
+      conceptoBasico = 'Varios Escuela';
+    } else if (/IBARGOYEN|TALLER|MECANICO/i.test(concepto)) {
+      conceptoBasico = 'Mantenimiento coches';
+    }
+
+    movs.push({ fecha, concepto, localidad, importe: -importe, imputar_a: conceptoBasico ? area : '???', concepto_basico: conceptoBasico, titular, tipo });
+  }
+
+  return { titular, tipo, movimientos: movs };
+}
+
+function renderPreviewVisas() {
+  const container = document.getElementById('preview-visa-area');
+  if (!pendingVisas.length) { container.style.display = 'none'; return; }
+
+  const totalMovs = pendingVisas.reduce((s, v) => s + v.movimientos.length, 0);
+  container.style.display = 'block';
+  container.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div>
+        <strong>${pendingVisas.length} tarjetas · ${totalMovs} movimientos</strong>
+        <span style="color:var(--muted);font-size:12px;margin-left:8px">${pendingVisas.map(v => v.titular).join(', ')}</span>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary btn-sm" onclick="cancelarImportVisa()">Cancelar</button>
+        <button class="btn btn-primary btn-sm" onclick="guardarVisas()">Guardar tarjetas</button>
+      </div>
+    </div>
+    ${pendingVisas.map(v => `
+      <div style="margin-bottom:16px">
+        <div style="font-weight:600;font-size:13px;margin-bottom:8px">
+          <span class="badge ${v.tipo === 'Viat' ? 'badge-escuela' : 'badge-sociedad'}">${v.tipo}</span>
+          <span style="margin-left:8px">${v.titular}</span>
+          <span style="color:var(--muted);font-size:12px;margin-left:6px">${v.movimientos.length} movimientos</span>
+        </div>
+        <div class="table-wrap" style="max-height:200px;overflow-y:auto">
+          <table>
+            <thead><tr><th>Fecha</th><th>Concepto</th><th>Localidad</th><th style="text-align:right">Importe</th><th>Categoría</th></tr></thead>
+            <tbody>
+              ${v.movimientos.map(m => `<tr>
+                <td style="white-space:nowrap">${m.fecha}</td>
+                <td style="font-size:12px">${m.concepto}</td>
+                <td style="font-size:12px;color:var(--muted)">${m.localidad}</td>
+                <td style="text-align:right" class="importe-neg">${formatEur(m.importe)}</td>
+                <td style="font-size:12px">${m.concepto_basico || '<span style="color:var(--warn)">???</span>'}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `).join('')}
+  `;
+}
+
+async function guardarVisas() {
+  if (!pendingVisas.length) return;
+  const totalMovs = pendingVisas.reduce((s, v) => s + v.movimientos.length, 0);
+
+  // Get existing to avoid dupes
+  const existing = await sbGet('movimientos_visa', 'select=fecha,concepto,importe,titular');
+  const existingSet = new Set(
+    (Array.isArray(existing) ? existing : []).map(m => `${m.fecha}|${m.concepto}|${m.importe}|${m.titular}`)
+  );
+  // Key includes titular so same autopista charge on same day for different cars is NOT a dupe
+
+  // Get all bank movements that are tarjeta credito for auto-linking
+  const bancoCargos = await sbGet('movimientos', 
+    `temporada=eq.25-26&concepto_bancario=like.*TARJETA CREDITO*&select=id,fecha,concepto_bancario,importe,mes`);
+  const cargosArr = Array.isArray(bancoCargos) ? bancoCargos : [];
+
+  const nuevos = [];
+  const vinculos = []; // {movimiento_id, total} for logging
+  let noVinculados = 0;
+
+  for (const v of pendingVisas) {
+    if (!v.movimientos.length) continue;
+
+    // Group movements by month and try to link each month separately
+    const porMes = {};
+    v.movimientos.forEach(m => {
+      const mes = parseInt(m.fecha.split('-')[1]);
+      if (!porMes[mes]) porMes[mes] = [];
+      porMes[mes].push(m);
+    });
+
+    const movimientoIdPorMes = {};
+
+    for (const [mes, movsDelMes] of Object.entries(porMes)) {
+      const totalMes = Math.round(movsDelMes.reduce((s, m) => s + Math.abs(m.importe), 0) * 100) / 100;
+      if (totalMes === 0) continue;
+
+      const candidatos = cargosArr.filter(c => {
+        if (c.mes !== parseInt(mes)) return false;
+        const importeAbs = Math.round(Math.abs(c.importe) * 100) / 100;
+        const totalMatch = Math.abs(importeAbs - totalMes) < 0.02;
+        if (!totalMatch) return false;
+        if (v.tipo === 'Viat') {
+          return c.concepto_bancario.includes('CLUB CICLISTA IRUNES');
+        } else {
+          const apellido = v.titular.toUpperCase();
+          return c.concepto_bancario.toUpperCase().includes(apellido);
+        }
+      });
+
+      if (candidatos.length === 1) {
+        movimientoIdPorMes[mes] = candidatos[0].id;
+        vinculos.push({ titular: v.titular, mes, total: totalMes, linked: true });
+      } else {
+        noVinculados++;
+        vinculos.push({ titular: v.titular, mes, total: totalMes, linked: false, 
+          reason: candidatos.length === 0 ? 'Sin coincidencia' : 'Múltiples coincidencias' });
+      }
+    }
+
+    v.movimientos.forEach(m => {
+      const key = `${m.fecha}|${m.concepto}|${m.importe}|${m.titular}`;
+      const mes = parseInt(m.fecha.split('-')[1]);
+      if (!existingSet.has(key)) {
+        nuevos.push({ 
+          ...m, 
+          movimiento_id: movimientoIdPorMes[mes] || null,
+          temporada: '25-26', 
+          mes 
+        });
+      }
+    });
+  }
+
+  const dupes = totalMovs - nuevos.length;
+  if (!nuevos.length) { toast('Todo ya existe, nada que guardar.'); return; }
+
+  const toSave = nuevos.map(({tipo, localidad, ...m}) => m);
+  await sbPost('movimientos_visa', toSave);
+
+  const vinculados = vinculos.filter(v => v.linked).length;
+  let msg = `${nuevos.length} movimientos guardados`;
+  if (vinculados) msg += ` · ${vinculados} tarjetas vinculadas al banco`;
+  if (noVinculados) msg += ` · ${noVinculados} sin vincular (revisar)`;
+  if (dupes) msg += ` · ${dupes} duplicados omitidos`;
+
+  cancelarImportVisa();
+  toast(msg + ' ✓');
+}
+
+function cancelarImportVisa() {
+  pendingVisas = [];
+  document.getElementById('preview-visa-area').style.display = 'none';
+  document.getElementById('file-input-visa').value = '';
+}
+
 // ─── RESUMEN ──────────────────────────────────────────────────
 async function cargarResumen() {
-  const data = await sbGet('movimientos', 'temporada=eq.25-26&order=fecha.asc');
+  const [data, dataVisa] = await Promise.all([
+    sbGet('movimientos', 'temporada=eq.25-26&order=fecha.asc'),
+    sbGet('movimientos_visa', 'temporada=eq.25-26&contabilizado=eq.true&select=importe,imputar_a,concepto_basico')
+  ]);
   const movs = Array.isArray(data) ? data : [];
+  const visa = Array.isArray(dataVisa) ? dataVisa : [];
 
-  renderResumenArea(movs, 'Escuela', 'escuela');
-  renderResumenArea(movs, 'Sociedad', 'sociedad');
+  // Merge visa into movs-like structure using concepto_basico as concepto
+  const visaAsMovs = visa.map(v => ({
+    imputar_a: v.imputar_a,
+    concepto: v.concepto_basico || 'Sin concepto',
+    importe: v.importe
+  }));
+
+  // Exclude Visas area from movimientos (those are covered by movimientos_visa detail)
+  const movsNoVisas = movs.filter(m => m.imputar_a !== 'Visas' && m.imputar_a !== '???');
+  renderResumenArea([...movsNoVisas, ...visaAsMovs], 'Escuela', 'escuela');
+  renderResumenArea([...movsNoVisas, ...visaAsMovs], 'Sociedad', 'sociedad');
 }
 
 function renderResumenArea(movs, area, key) {
-  const filtrados = movs.filter(m => m.imputar_a === area);
-  const porConcepto = {};
+  const filtrados = movs.filter(m => m.imputar_a === area && m.imputar_a !== '???');
+  const porConceptoIng = {};
+  const porConceptoGas = {};
   filtrados.forEach(m => {
     const c = m.concepto || 'Sin concepto';
-    porConcepto[c] = (porConcepto[c] || 0) + m.importe;
+    if (m.importe >= 0) {
+      porConceptoIng[c] = (porConceptoIng[c] || 0) + m.importe;
+    } else {
+      porConceptoGas[c] = (porConceptoGas[c] || 0) + m.importe;
+    }
   });
-
-  const ingresos = Object.entries(porConcepto).filter(([,v]) => v > 0).sort((a,b) => b[1]-a[1]);
-  const gastos = Object.entries(porConcepto).filter(([,v]) => v < 0).sort((a,b) => a[1]-b[1]);
+  const ingresos = Object.entries(porConceptoIng).filter(([,v]) => v > 0).sort((a,b) => b[1]-a[1]);
+  const gastos = Object.entries(porConceptoGas).filter(([,v]) => v < 0).sort((a,b) => a[1]-b[1]);
   const total = filtrados.reduce((s,m) => s + m.importe, 0);
 
   document.getElementById(`resumen-${key}-ingresos`).innerHTML =
@@ -1101,6 +1670,233 @@ function exportarExcel() {
 }
 
 function exportarResumen() { toast('Próximamente'); }
+
+// ─── TARJETAS ─────────────────────────────────────────────────
+let tarjetasCache = [];
+
+async function cargarTarjetas() {
+  const mes = document.getElementById('filtro-tarjeta-mes').value;
+  const titular = document.getElementById('filtro-tarjeta-titular').value;
+
+  let params = 'temporada=eq.25-26&order=fecha.desc';
+  if (mes) params += `&mes=eq.${mes}`;
+  if (titular) params += `&titular=eq.${encodeURIComponent(titular)}`;
+
+  const data = await sbGet('movimientos_visa', params);
+  tarjetasCache = Array.isArray(data) ? data : [];
+
+  // Populate titular filter
+  const titulares = [...new Set(tarjetasCache.map(m => m.titular).filter(Boolean))].sort();
+  const selTitular = document.getElementById('filtro-tarjeta-titular');
+  const currentVal = selTitular.value;
+  selTitular.innerHTML = '<option value="">Todos los titulares</option>' + 
+    titulares.map(t => `<option value="${t}" ${t === currentVal ? 'selected' : ''}>${t}</option>`).join('');
+
+  renderTarjetas();
+}
+
+function renderTarjetas() {
+  const tbody = document.getElementById('tarjetas-body');
+  
+  if (!tarjetasCache.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">💳</div><p>No hay movimientos de tarjetas para este filtro</p></div></td></tr>`;
+    document.getElementById('tarjetas-resumen').innerHTML = '';
+    document.getElementById('tarjetas-total').textContent = '';
+    return;
+  }
+
+  // Summary by titular
+  const porTitular = {};
+  tarjetasCache.forEach(m => {
+    if (!porTitular[m.titular]) porTitular[m.titular] = { total: 0, count: 0, tipo: m.tipo };
+    porTitular[m.titular].total += m.importe || 0;
+    porTitular[m.titular].count++;
+  });
+
+  document.getElementById('tarjetas-resumen').innerHTML = Object.entries(porTitular)
+    .sort((a,b) => a[0].localeCompare(b[0]))
+    .map(([titular, d]) => `
+      <div class="stat-card" style="min-width:160px;cursor:pointer" onclick="filtrarPorTitular('${titular}')">
+        <div class="stat-label">${titular}</div>
+        <div class="stat-value negative" style="font-size:16px">${formatEur(d.total)}</div>
+        <div class="stat-sub">${d.count} movimientos · <span class="badge ${d.tipo === 'Viat' ? 'badge-escuela' : 'badge-sociedad'}" style="font-size:10px">${d.tipo || 'Visa'}</span></div>
+      </div>
+    `).join('');
+
+  const total = tarjetasCache.reduce((s, m) => s + (m.importe || 0), 0);
+  document.getElementById('tarjetas-total').textContent = formatEur(total);
+
+  tbody.innerHTML = tarjetasCache.map(m => {
+    const impClass = m.importe >= 0 ? 'importe-pos' : 'importe-neg';
+    return `<tr>
+      <td style="white-space:nowrap;font-size:12px">${m.fecha}</td>
+      <td style="font-weight:500;font-size:12px">${m.titular || '—'}</td>
+      <td><span class="badge ${m.tipo === 'Viat' ? 'badge-escuela' : 'badge-sociedad'}">${m.tipo || 'Visa'}</span></td>
+      <td style="max-width:200px;font-size:12px">${m.concepto}</td>
+      <td style="font-size:12px;color:var(--muted)">${m.localidad || '—'}</td>
+      <td style="text-align:right" class="${impClass}">${formatEur(m.importe)}</td>
+      <td>
+        <select onchange="guardarCampoVisa('${m.id}','imputar_a',this.value,this)" style="font-size:12px;padding:3px 6px;border-radius:5px;border:1px solid var(--border);background:${m.imputar_a==='Escuela'?'#eff6ff':m.imputar_a==='Sociedad'?'#f0fdf4':m.imputar_a==='Visas'?'#f5f3ff':'#fffbeb'};color:${m.imputar_a==='Escuela'?'var(--escuela)':m.imputar_a==='Sociedad'?'var(--sociedad)':m.imputar_a==='Visas'?'#7c3aed':'var(--warn)'}">
+          <option value="Escuela" ${m.imputar_a==='Escuela'?'selected':''}>Escuela</option>
+          <option value="Sociedad" ${m.imputar_a==='Sociedad'?'selected':''}>Sociedad</option>
+          <option value="???" ${m.imputar_a==='???'||!m.imputar_a?'selected':''}>???</option>
+        </select>
+      </td>
+      <td>
+        <select onchange="guardarCampoVisa('${m.id}','concepto_basico',this.value,this)" style="font-size:12px;padding:3px 6px;border-radius:5px;border:1px solid var(--border);max-width:180px">
+          <option value="">— concepto —</option>
+          ${(m.imputar_a && CONCEPTOS[m.imputar_a] ? CONCEPTOS[m.imputar_a] : [...CONCEPTOS.Escuela,...CONCEPTOS.Sociedad]).map(c=>`<option value="${c}" ${c===m.concepto_basico?'selected':''}>${c}</option>`).join('')}
+        </select>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filtrarPorTitular(titular) {
+  document.getElementById('filtro-tarjeta-titular').value = titular;
+  cargarTarjetas();
+}
+
+function exportarTarjetas() {
+  if (!tarjetasCache.length) return;
+  const rows = [['Fecha','Titular','Tipo','Concepto','Localidad','Importe','Categoría','Vinculado']];
+  tarjetasCache.forEach(m => {
+    rows.push([m.fecha, m.titular, m.tipo, m.concepto, m.localidad, m.importe, m.concepto_basico, m.movimiento_id ? 'Sí' : 'No']);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Tarjetas');
+  XLSX.writeFile(wb, 'Tarjetas_CCI.xlsx');
+}
+
+// ─── EDIT VISA ────────────────────────────────────────────────
+let editandoVisa = null;
+
+function abrirEditarVisa(id) {
+  editandoVisa = tarjetasCache.find(m => m.id === id);
+  if (!editandoVisa) return;
+
+  document.getElementById('modal-visa-titulo').textContent = editandoVisa.concepto;
+  document.getElementById('modal-visa-subtitulo').textContent = 
+    `${editandoVisa.fecha} · ${editandoVisa.titular} · ${formatEur(editandoVisa.importe)}`;
+  document.getElementById('visa-edit-area').value = editandoVisa.imputar_a || 'Escuela';
+  document.getElementById('visa-edit-obs').value = editandoVisa.observaciones || '';
+  updateVisaConceptoSelect(editandoVisa.concepto_basico);
+  document.getElementById('modal-editar-visa').classList.add('open');
+}
+
+function updateVisaConceptoSelect(selected) {
+  const area = document.getElementById('visa-edit-area').value;
+  const sel = document.getElementById('visa-edit-concepto');
+  const opts = area && CONCEPTOS[area] ? CONCEPTOS[area] : [...CONCEPTOS.Escuela, ...CONCEPTOS.Sociedad];
+  sel.innerHTML = '<option value="">— selecciona —</option>' + 
+    opts.map(c => `<option value="${c}" ${c === (selected || editandoVisa?.concepto_basico) ? 'selected' : ''}>${c}</option>`).join('');
+}
+
+async function guardarEdicionVisa() {
+  if (!editandoVisa) return;
+  const body = {
+    imputar_a: document.getElementById('visa-edit-area').value,
+    concepto_basico: document.getElementById('visa-edit-concepto').value,
+    observaciones: document.getElementById('visa-edit-obs').value || null,
+  };
+  await fetch(`${SUPABASE_URL}/rest/v1/movimientos_visa?id=eq.${editandoVisa.id}`, {
+    method: 'PATCH',
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+  cerrarModal('modal-editar-visa');
+  toast('Guardado ✓');
+  await cargarTarjetas();
+}
+
+// ─── CONFIG ───────────────────────────────────────────────────
+let editandoConcepto = null;
+
+async function cargarConfig() {
+  const data = await sbGet('conceptos', 'activo=eq.true&order=area.asc,orden.asc');
+  if (!Array.isArray(data)) return;
+  const escuela = data.filter(c => c.area === 'Escuela');
+  const sociedad = data.filter(c => c.area === 'Sociedad');
+
+  document.getElementById('config-escuela-body').innerHTML = escuela.map(c => `
+    <tr>
+      <td>${c.nombre}</td>
+      <td style="color:var(--muted)">${c.orden}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn btn-secondary btn-sm" onclick="abrirEditarConcepto('${c.id}','${c.area}','${c.nombre}',${c.orden})">Editar</button>
+        <button class="btn btn-secondary btn-sm" style="color:var(--accent)" onclick="eliminarConcepto('${c.id}')">✕</button>
+      </td>
+    </tr>
+  `).join('');
+
+  document.getElementById('config-sociedad-body').innerHTML = sociedad.map(c => `
+    <tr>
+      <td>${c.nombre}</td>
+      <td style="color:var(--muted)">${c.orden}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn btn-secondary btn-sm" onclick="abrirEditarConcepto('${c.id}','${c.area}','${c.nombre}',${c.orden})">Editar</button>
+        <button class="btn btn-secondary btn-sm" style="color:var(--accent)" onclick="eliminarConcepto('${c.id}')">✕</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function abrirNuevoConcepto() {
+  editandoConcepto = null;
+  document.getElementById('modal-concepto-title').textContent = 'Nuevo concepto';
+  document.getElementById('mc-area').value = 'Escuela';
+  document.getElementById('mc-nombre').value = '';
+  document.getElementById('mc-orden').value = '99';
+  document.getElementById('modal-concepto').classList.add('open');
+}
+
+function abrirEditarConcepto(id, area, nombre, orden) {
+  editandoConcepto = id;
+  document.getElementById('modal-concepto-title').textContent = 'Editar concepto';
+  document.getElementById('mc-area').value = area;
+  document.getElementById('mc-nombre').value = nombre;
+  document.getElementById('mc-orden').value = orden;
+  document.getElementById('modal-concepto').classList.add('open');
+}
+
+async function guardarConcepto() {
+  const area = document.getElementById('mc-area').value;
+  const nombre = document.getElementById('mc-nombre').value.trim();
+  const orden = parseInt(document.getElementById('mc-orden').value) || 99;
+  if (!nombre) return;
+
+  if (editandoConcepto) {
+    await fetch(`${SUPABASE_URL}/rest/v1/conceptos?id=eq.${editandoConcepto}`, {
+      method: 'PATCH',
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ area, nombre, orden })
+    });
+  } else {
+    await sbPost('conceptos', { area, nombre, orden, activo: true });
+  }
+
+  cerrarModal('modal-concepto');
+  await cargarConceptos();
+  await cargarConfig();
+  toast('Concepto guardado ✓');
+}
+
+async function eliminarConcepto(id) {
+  if (!confirm('¿Eliminar este concepto?')) return;
+  await fetch(`${SUPABASE_URL}/rest/v1/conceptos?id=eq.${id}`, {
+    method: 'PATCH',
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ activo: false })
+  });
+  await cargarConceptos();
+  await cargarConfig();
+  toast('Concepto eliminado ✓');
+}
 
 // ─── UTILS ────────────────────────────────────────────────────
 function formatEur(n) {
