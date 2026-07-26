@@ -869,18 +869,35 @@ function categorizar(concepto) {
 }
 
 // ─── AUTH ─────────────────────────────────────────────────────
+// Sesión compartida *.ccirunes.com
+const GRUPO = 'admin';
+const CC_HORAS = 12;
+const ccSesionActiva = g => document.cookie.split('; ').some(c => c === 'cc_' + g + '=ok');
+const ccAbrirSesion  = g => document.cookie = `cc_${g}=ok; domain=.ccirunes.com; path=/; max-age=${CC_HORAS*3600}; SameSite=Lax; Secure`;
+const ccCerrarSesion = g => document.cookie = `cc_${g}=; domain=.ccirunes.com; path=/; max-age=0; SameSite=Lax; Secure`;
+
+function entrarApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  init();
+}
+
 function checkPin() {
   const val = document.getElementById('pin-input').value;
   if (val === PIN) {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    init();
+    ccAbrirSesion(GRUPO);
+    entrarApp();
   } else {
     document.getElementById('login-error').textContent = 'Código incorrecto';
     document.getElementById('pin-input').value = '';
   }
 }
 document.getElementById('pin-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkPin(); });
+
+function cerrarSesion() {
+  ccCerrarSesion(GRUPO);
+  location.reload();
+}
 
 // ─── NAVIGATION ───────────────────────────────────────────────
 function showPage(id) {
@@ -1910,6 +1927,9 @@ function toast(msg) {
   el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 2500);
 }
+
+// Si ya hay sesión abierta en otra app del grupo, entrar directo
+if (ccSesionActiva(GRUPO)) entrarApp();
 
 </script>
 </body>
