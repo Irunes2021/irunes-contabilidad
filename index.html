@@ -540,6 +540,7 @@
             <p style="margin-top:6px;font-size:12px">Formato: extracto BBK (.xls)</p>
           </div>
           <input type="file" id="file-input" accept=".xls,.xlsx" onchange="handleFile(this.files[0])">
+          <div id="import-diag" style="display:none;margin-top:16px;padding:14px 16px;border:1px solid;border-radius:8px;font-size:13px;line-height:1.55"></div>
           <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
             <p style="font-size:12px;color:var(--muted);margin-bottom:8px">O importa un fichero JSON pre-categorizado:</p>
             <input type="file" id="file-input-json" accept=".json" onchange="handleJsonFile(this.files[0])" style="font-size:12px">
@@ -1197,47 +1198,109 @@ function handleDrop(e) {
   handleFile(e.dataTransfer.files[0]);
 }
 
+// Convierte una fecha a 'YYYY-MM-DD' SIN pasar por UTC.
+// toISOString() restaba un día en horario de verano (CEST = UTC+2).
+function fechaLocalISO(d) {
+  if (!(d instanceof Date) || isNaN(d)) return null;
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+// Serie de Excel -> fecha (base 1899-12-30, en UTC para evitar desfases)
+function fechaDesdeSerie(n) {
+  const ms = Math.round((n - 25569) * 86400 * 1000);
+  const d = new Date(ms);
+  if (isNaN(d)) return null;
+  const p = x => String(x).padStart(2, '0');
+  return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}`;
+}
+
+function normalizaFecha(raw) {
+  if (raw instanceof Date)      return fechaLocalISO(raw);
+  if (typeof raw === 'number')  return fechaDesdeSerie(raw);
+  if (typeof raw === 'string')  return parseFechaES(raw.trim());
+  return null;
+}
+
 function handleFile(file) {
   if (!file) return;
+  const diag = document.getElementById('import-diag');
+  if (diag) { diag.style.display = 'none'; diag.innerHTML = ''; }
+
   const reader = new FileReader();
+
+  reader.onerror = () => avisoImport('error',
+    'No se ha podido leer el fichero. Puede estar abierto en Excel o dañado.');
+
   reader.onload = e => {
-    const wb = XLSX.read(e.target.result, { type: 'binary', cellDates: true });
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+    let wb, ws, rows;
 
-    // Find header row - search for 'F. Operativa' flexibly
-    let headerIdx = -1;
-    for (let i = 0; i < rows.length; i++) {
-      const r = rows[i];
-      if (r && r[0] && String(r[0]).trim().toLowerCase().includes('f. operativa')) {
-        headerIdx = i; break;
-      }
+    // 1) Abrir el libro
+    try {
+      wb = XLSX.read(e.target.result, { type: 'binary', cellDates: true });
+    } catch (err) {
+      avisoImport('error',
+        'El fichero no se ha podido abrir como Excel.<br>' +
+        'Si lo descargaste del banco, comprueba que no sea un .xls antiguo o un HTML renombrado. ' +
+        'Prueba a abrirlo en Excel y guardarlo como <strong>.xlsx</strong>.' +
+        '<br><small style="color:var(--muted)">Detalle técnico: ' + esc(err.message) + '</small>');
+      return;
     }
-    if (headerIdx < 0) headerIdx = 8; // fallback BBK format
 
-    const movs = [];
-    for (let i = headerIdx + 1; i < rows.length; i++) {
+    if (!wb.SheetNames.length) {
+      avisoImport('error', 'El fichero no contiene ninguna hoja.');
+      return;
+    }
+
+    ws = wb.Sheets[wb.SheetNames[0]];
+    rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+
+    if (!rows.length) {
+      avisoImport('error', `La hoja "${esc(wb.SheetNames[0])}" está vacía.`);
+      return;
+    }
+
+    // 2) Localizar la fila de cabecera: 'F. Operativa' en CUALQUIER columna
+    let headerIdx = -1;
+    for (let i = 0; i < rows.length && headerIdx < 0; i++) {
       const r = rows[i];
       if (!r) continue;
-      const fechaRaw = r[0];
-      if (!fechaRaw) continue;
-      let fecha = null;
-      if (fechaRaw instanceof Date) {
-        fecha = fechaRaw.toISOString().split('T')[0];
-      } else if (typeof fechaRaw === 'string') {
-        fecha = parseFechaES(fechaRaw.trim());
-      } else if (typeof fechaRaw === 'number') {
-        const d = new Date(Math.round((fechaRaw - 25569) * 86400 * 1000));
-        fecha = d.toISOString().split('T')[0];
+      for (const celda of r) {
+        const t = String(celda || '').trim().toLowerCase();
+        if (t.includes('f. operativa') || t.includes('f.operativa') ||
+            t.includes('fecha operativa') || t === 'f. valor') {
+          headerIdx = i; break;
+        }
       }
-      if (!fecha) continue;
+    }
+
+    const cabeceraEncontrada = headerIdx >= 0;
+    if (!cabeceraEncontrada) headerIdx = 8; // formato BBK clásico
+
+    // 3) Extraer movimientos, contando los descartes y por qué
+    const movs = [];
+    const descartes = { sinFecha: 0, sinImporte: 0, sinConcepto: 0 };
+
+    for (let i = headerIdx + 1; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r || r.every(c => c === null || c === '')) continue;
+
+      const fecha = normalizaFecha(r[0]);
+      if (!fecha) { descartes.sinFecha++; continue; }
+
       const importeRaw = r[3];
-      if (importeRaw === null || importeRaw === undefined || importeRaw === '') continue;
-      const importe = parseFloat(String(importeRaw).replace(',', '.'));
-      if (isNaN(importe)) continue;
+      if (importeRaw === null || importeRaw === undefined || importeRaw === '') {
+        descartes.sinImporte++; continue;
+      }
+      // Admite "1.234,56" además de "1234.56"
+      const importe = typeof importeRaw === 'number'
+        ? importeRaw
+        : parseFloat(String(importeRaw).replace(/\./g, '').replace(',', '.'));
+      if (isNaN(importe)) { descartes.sinImporte++; continue; }
+
       const conceptoBancario = String(r[1] || '').trim();
-      if (!conceptoBancario) continue;
-      const mes = parseInt(fecha.split('-')[1]);
+      if (!conceptoBancario) { descartes.sinConcepto++; continue; }
+
       const cat = categorizar(conceptoBancario);
       movs.push({
         fecha,
@@ -1245,17 +1308,55 @@ function handleFile(file) {
         importe,
         imputar_a: cat.area,
         concepto: cat.concepto,
-        mes,
+        mes: parseInt(fecha.split('-')[1]),
         temporada: '25-26',
         factura_si: false,
         es_visa: conceptoBancario.includes('TARJETA CREDITO'),
       });
     }
 
+    // 4) Si no sale nada, explicar por qué en vez de quedarse mudo
+    if (!movs.length) {
+      const muestra = rows.slice(0, 14).map((r, i) =>
+        `<tr><td style="color:var(--muted);padding-right:10px">${i}</td><td>` +
+        (r || []).slice(0, 5).map(c => esc(String(c ?? '')).slice(0, 30)).join(
+          '</td><td style="padding-left:10px">') + '</td></tr>'
+      ).join('');
+
+      avisoImport('error',
+        '<strong>No se ha detectado ningún movimiento en el fichero.</strong><br>' +
+        (cabeceraEncontrada
+          ? `Cabecera localizada en la fila ${headerIdx}, pero ninguna fila posterior tiene fecha, importe y concepto en las columnas esperadas (A, B y D).`
+          : 'No se ha encontrado la cabecera "F. Operativa". Es posible que el banco haya cambiado el formato del extracto.') +
+        `<br><small>Filas descartadas — sin fecha válida: ${descartes.sinFecha} · ` +
+        `sin importe: ${descartes.sinImporte} · sin concepto: ${descartes.sinConcepto}</small>` +
+        '<div style="margin-top:12px"><strong style="font-size:12px">Primeras filas del fichero:</strong>' +
+        `<table style="font-size:11px;margin-top:6px;border-collapse:collapse">${muestra}</table></div>`);
+      return;
+    }
+
     pendingImport = movs;
     renderPreview(movs, rows);
   };
+
   reader.readAsBinaryString(file);
+}
+
+function esc(t) {
+  return String(t).replace(/[&<>"]/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+function avisoImport(tipo, html) {
+  const el = document.getElementById('import-diag');
+  if (!el) { alert(html.replace(/<[^>]+>/g, ' ')); return; }
+  el.style.display = 'block';
+  el.style.borderColor = tipo === 'error' ? '#f7c1c1' : '#fac775';
+  el.style.background  = tipo === 'error' ? '#fcebeb' : '#faeeda';
+  el.style.color       = tipo === 'error' ? '#791f1f' : '#633806';
+  el.innerHTML = html;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  document.getElementById('file-input').value = '';
 }
 
 function parseFechaES(s) {
