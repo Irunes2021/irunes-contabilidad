@@ -1277,6 +1277,28 @@ function handleFile(file) {
     const cabeceraEncontrada = headerIdx >= 0;
     if (!cabeceraEncontrada) headerIdx = 8; // formato BBK clásico
 
+    // 2b) Mapear las columnas por su TÍTULO, no por posición fija.
+    //     El extracto no siempre trae el importe en la columna D.
+    const cab = (rows[headerIdx] || []).map(c => String(c || '').trim().toLowerCase());
+    const buscaCol = (...claves) => {
+      for (let i = 0; i < cab.length; i++)
+        if (claves.some(k => cab[i].includes(k))) return i;
+      return -1;
+    };
+
+    let colFecha    = buscaCol('f. operativa', 'f.operativa', 'fecha operativa');
+    let colConcepto = buscaCol('concepto');
+    let colImporte  = buscaCol('importe');
+    // Columnas opcionales que el propio club añade al revisar el extracto
+    const colArea      = buscaCol('imputar a');
+    const colConceptCC = cab.lastIndexOf('concepto:');
+
+    if (colFecha    < 0) colFecha    = 0;
+    if (colConcepto < 0) colConcepto = 1;
+    if (colImporte  < 0) colImporte  = 3;   // formato BBK clásico
+    // 'concepto' coincide con 'concepto:' — si son la misma, usar la primera
+    if (colConcepto === colConceptCC) colConcepto = buscaCol('concepto');
+
     // 3) Extraer movimientos, contando los descartes y por qué
     const movs = [];
     const descartes = { sinFecha: 0, sinImporte: 0, sinConcepto: 0 };
@@ -1285,10 +1307,10 @@ function handleFile(file) {
       const r = rows[i];
       if (!r || r.every(c => c === null || c === '')) continue;
 
-      const fecha = normalizaFecha(r[0]);
+      const fecha = normalizaFecha(r[colFecha]);
       if (!fecha) { descartes.sinFecha++; continue; }
 
-      const importeRaw = r[3];
+      const importeRaw = r[colImporte];
       if (importeRaw === null || importeRaw === undefined || importeRaw === '') {
         descartes.sinImporte++; continue;
       }
@@ -1298,16 +1320,20 @@ function handleFile(file) {
         : parseFloat(String(importeRaw).replace(/\./g, '').replace(',', '.'));
       if (isNaN(importe)) { descartes.sinImporte++; continue; }
 
-      const conceptoBancario = String(r[1] || '').trim();
+      const conceptoBancario = String(r[colConcepto] || '').trim();
       if (!conceptoBancario) { descartes.sinConcepto++; continue; }
 
+      // Si el fichero ya trae área/concepto rellenados a mano, se respetan.
       const cat = categorizar(conceptoBancario);
+      const areaManual = colArea      >= 0 ? String(r[colArea]      || '').trim() : '';
+      const concManual = colConceptCC >= 0 ? String(r[colConceptCC] || '').trim() : '';
+
       movs.push({
         fecha,
         concepto_bancario: conceptoBancario,
         importe,
-        imputar_a: cat.area,
-        concepto: cat.concepto,
+        imputar_a: areaManual || cat.area,
+        concepto: concManual || cat.concepto,
         mes: parseInt(fecha.split('-')[1]),
         temporada: '25-26',
         factura_si: false,
@@ -1330,6 +1356,7 @@ function handleFile(file) {
           : 'No se ha encontrado la cabecera "F. Operativa". Es posible que el banco haya cambiado el formato del extracto.') +
         `<br><small>Filas descartadas — sin fecha válida: ${descartes.sinFecha} · ` +
         `sin importe: ${descartes.sinImporte} · sin concepto: ${descartes.sinConcepto}</small>` +
+        `<br><small>Columnas detectadas — fecha: ${colFecha} · concepto: ${colConcepto} · importe: ${colImporte}</small>` +
         '<div style="margin-top:12px"><strong style="font-size:12px">Primeras filas del fichero:</strong>' +
         `<table style="font-size:11px;margin-top:6px;border-collapse:collapse">${muestra}</table></div>`);
       return;
