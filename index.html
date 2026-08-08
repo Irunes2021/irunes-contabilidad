@@ -380,6 +380,10 @@
     }
     .empty-state .icon { font-size: 36px; margin-bottom: 10px; }
     .empty-state p { font-size: 13px; }
+    .th-sort { cursor: pointer; user-select: none; white-space: nowrap; }
+    .th-sort:hover { color: var(--accent); }
+    .sort-ind { font-size: 10px; color: var(--accent); }
+    .month-btn.year-btn { font-weight: 700; }
   </style>
 </head>
 <body>
@@ -423,6 +427,14 @@
           <option value="Sociedad">Sociedad</option>
           <option value="Visas">Visas</option>
           <option value="???">Sin categorizar</option>
+        </select>
+        <select id="filtro-mov-concepto" onchange="aplicarFiltrosCliente()" style="font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:6px">
+          <option value="">Todos los conceptos</option>
+        </select>
+        <select id="filtro-mov-factura" onchange="aplicarFiltrosCliente()" style="font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:6px">
+          <option value="">Factura: todas</option>
+          <option value="si">Con factura</option>
+          <option value="no">Sin factura</option>
         </select>
         <select id="filtro-mov-mes-sel" onchange="aplicarFiltroMovimientos()" style="font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:6px">
           <option value="">Todos los meses</option>
@@ -471,12 +483,12 @@
           <table id="tabla-movimientos">
             <thead>
               <tr>
-                <th>Fecha</th>
-                <th>Concepto bancario</th>
-                <th style="text-align:right">Importe</th>
-                <th>Área</th>
-                <th>Concepto</th>
-                <th>Factura</th>
+                <th class="th-sort" onclick="ordenarPor('fecha')">Fecha <span class="sort-ind" data-col="fecha"></span></th>
+                <th class="th-sort" onclick="ordenarPor('concepto_bancario')">Concepto bancario <span class="sort-ind" data-col="concepto_bancario"></span></th>
+                <th class="th-sort" style="text-align:right" onclick="ordenarPor('importe')">Importe <span class="sort-ind" data-col="importe"></span></th>
+                <th class="th-sort" onclick="ordenarPor('imputar_a')">Área <span class="sort-ind" data-col="imputar_a"></span></th>
+                <th class="th-sort" onclick="ordenarPor('concepto')">Concepto <span class="sort-ind" data-col="concepto"></span></th>
+                <th class="th-sort" onclick="ordenarPor('factura_si')">Factura <span class="sort-ind" data-col="factura_si"></span></th>
               </tr>
             </thead>
             <tbody id="tabla-body">
@@ -932,7 +944,17 @@ function renderMonthNav() {
   const nav = document.getElementById('month-nav');
   nav.innerHTML = MESES.map((m, i) => `
     <div class="month-btn" id="mbtn-${i}" onclick="selectMes(${i})">${m}</div>
-  `).join('');
+  `).join('') + `<div class="month-btn year-btn" id="mbtn-year" onclick="selectTodoAnio()">Todo el año</div>`;
+}
+
+// Carga TODOS los movimientos de la temporada (sin filtro de mes)
+async function selectTodoAnio() {
+  mesActivo = null;
+  document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
+  const by = document.getElementById('mbtn-year');
+  if (by) by.classList.add('active');
+  document.getElementById('filtro-mov-mes-sel').value = '';
+  await aplicarFiltroMovimientos();
 }
 
 async function selectMes(idx) {
@@ -965,10 +987,69 @@ async function aplicarFiltroMovimientos() {
     document.getElementById('tabla-titulo').textContent = `Movimientos — Todos los meses${area ? ' · ' + area : ''}`;
   }
 
+  document.getElementById('tabla-body').innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px"><div class="spinner"></div></td></tr>`;
   const data = await sbGet('movimientos', params);
   movimientosCache = Array.isArray(data) ? data : [];
+  rellenarFiltroConceptosMov();
+  aplicarFiltrosCliente();
+}
+
+// Rellena el desplegable de conceptos con los presentes en los movimientos cargados
+function rellenarFiltroConceptosMov() {
+  const sel = document.getElementById('filtro-mov-concepto');
+  if (!sel) return;
+  const prev = sel.value;
+  const lista = [...new Set(movimientosCache.map(m => m.concepto).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">Todos los conceptos</option>' +
+    lista.map(c => `<option value="${c}" ${c === prev ? 'selected' : ''}>${c}</option>`).join('');
+}
+
+// Filtros de concepto y factura + ordenación (todo en el navegador, instantáneo)
+let _ordenCol = 'fecha';
+let _ordenDir = 'asc';
+let movimientosVista = [];
+
+function aplicarFiltrosCliente() {
+  const con = document.getElementById('filtro-mov-concepto');
+  const fac = document.getElementById('filtro-mov-factura');
+  const cVal = con ? con.value : '';
+  const fVal = fac ? fac.value : '';
+
+  let lista = movimientosCache.slice();
+  if (cVal) lista = lista.filter(m => (m.concepto || '') === cVal);
+  if (fVal === 'si') lista = lista.filter(m => m.factura_si === true);
+  if (fVal === 'no') lista = lista.filter(m => !m.factura_si);
+
+  lista.sort((a, b) => {
+    let va = a[_ordenCol], vb = b[_ordenCol];
+    if (_ordenCol === 'importe') { va = Number(va) || 0; vb = Number(vb) || 0; }
+    else if (_ordenCol === 'factura_si') { va = va ? 1 : 0; vb = vb ? 1 : 0; }
+    else { va = String(va ?? '').toLowerCase(); vb = String(vb ?? '').toLowerCase(); }
+    if (va < vb) return _ordenDir === 'asc' ? -1 : 1;
+    if (va > vb) return _ordenDir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  movimientosVista = lista;
   renderTabla();
   renderStats();
+  pintarIndicadoresOrden();
+}
+
+function ordenarPor(col) {
+  if (_ordenCol === col) {
+    _ordenDir = (_ordenDir === 'asc') ? 'desc' : 'asc';
+  } else {
+    _ordenCol = col;
+    _ordenDir = (col === 'importe' || col === 'fecha') ? 'desc' : 'asc';
+  }
+  aplicarFiltrosCliente();
+}
+
+function pintarIndicadoresOrden() {
+  document.querySelectorAll('.sort-ind').forEach(el => {
+    el.textContent = (el.dataset.col === _ordenCol) ? (_ordenDir === 'asc' ? '▲' : '▼') : '';
+  });
 }
 
 // ─── SUPABASE ─────────────────────────────────────────────────
@@ -1018,11 +1099,11 @@ async function cargarMovimientos(mes) {
 }
 
 function renderTabla() {
-  const datos = movimientosCache;
+  const datos = (typeof movimientosVista !== 'undefined' && movimientosVista) ? movimientosVista : movimientosCache;
   const tbody = document.getElementById('tabla-body');
 
   if (!datos.length) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="icon">📂</div><p>No hay movimientos para este mes. Importa un extracto bancario.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="icon">📂</div><p>No hay movimientos con estos filtros.</p></div></td></tr>`;
     return;
   }
 
@@ -1058,9 +1139,13 @@ function renderTabla() {
 }
 
 function renderStats() {
-  const ingresos = movimientosCache.filter(m => m.importe > 0 && m.imputar_a !== '???').reduce((s, m) => s + m.importe, 0);
-  const gastos = movimientosCache.filter(m => m.importe < 0 && m.imputar_a !== '???').reduce((s, m) => s + m.importe, 0);
-  const pendientes = movimientosCache.filter(m => m.imputar_a === '???').length;
+  const base = (typeof movimientosVista !== 'undefined' && movimientosVista) ? movimientosVista : movimientosCache;
+  const ingresos = base.filter(m => m.importe > 0 && m.imputar_a !== '???').reduce((s, m) => s + m.importe, 0);
+  const gastos = base.filter(m => m.importe < 0 && m.imputar_a !== '???').reduce((s, m) => s + m.importe, 0);
+  const pendientes = base.filter(m => m.imputar_a === '???').length;
+  const tit = document.getElementById('tabla-titulo');
+  if (tit && !/\(\d+ mov/.test(tit.textContent)) tit.textContent = tit.textContent.replace(/\s*\(\d+ mov.*\)$/, '') + ` (${base.length} mov.)`;
+  else if (tit) tit.textContent = tit.textContent.replace(/\s*\(\d+ mov.*\)$/, '') + ` (${base.length} mov.)`;
   document.getElementById('stat-ingresos').textContent = formatEur(ingresos);
   document.getElementById('stat-gastos').textContent = formatEur(gastos);
   const res = ingresos + gastos;
