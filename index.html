@@ -393,7 +393,8 @@
   <div class="login-box">
     <div class="logo">irunes</div>
     <div class="subtitle">Contabilidad</div>
-    <input type="password" id="pin-input" placeholder="••••" maxlength="5" autofocus>
+    <input type="email" id="login-email" placeholder="tu@ccirunes.com" style="margin-bottom:8px">
+    <input type="password" id="pin-input" placeholder="Contraseña" autofocus>
     <div class="error" id="login-error"></div>
     <button class="btn btn-primary" style="width:100%" onclick="checkPin()">Entrar</button>
   </div>
@@ -836,7 +837,7 @@
 
 const SUPABASE_URL = 'https://dbydtwkzknbpifneznsu.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRieWR0d2t6a25icGlmbmV6bnN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMjMwODIsImV4cCI6MjA5MDc5OTA4Mn0.HcTWBEaI-2EH66mAUAaEM2ppzDG3eCd1ANjopNZdt1g';
-const PIN = '2121$';
+
 
 // ─── CONCEPTOS (cargados desde Supabase) ─────────────────────
 let CONCEPTOS = { Escuela: [], Sociedad: [] };
@@ -882,12 +883,54 @@ function categorizar(concepto) {
 }
 
 // ─── AUTH ─────────────────────────────────────────────────────
-// Sesión compartida *.ccirunes.com
-const GRUPO = 'admin';
-const CC_HORAS = 12;
-const ccSesionActiva = g => document.cookie.split('; ').some(c => c === 'cc_' + g + '=ok');
-const ccAbrirSesion  = g => document.cookie = `cc_${g}=ok; domain=.ccirunes.com; path=/; max-age=${CC_HORAS*3600}; SameSite=Lax; Secure`;
-const ccCerrarSesion = g => document.cookie = `cc_${g}=; domain=.ccirunes.com; path=/; max-age=0; SameSite=Lax; Secure`;
+const SS_KEY = 'cc_contabilidad_session';
+const REFRESH_MS = 50 * 60 * 1000; // 50 min
+let refreshTimer = null;
+
+function getSesion() { try { return JSON.parse(localStorage.getItem(SS_KEY)); } catch { return null; } }
+function sesionToken() { const s = getSesion(); return s ? s.access_token : SUPABASE_KEY; }
+function guardarSesion(s) { localStorage.setItem(SS_KEY, JSON.stringify(s)); }
+function borrarSesion() { localStorage.removeItem(SS_KEY); }
+
+async function authPassword(email, password) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+  if (!res.ok) throw new Error('Credenciales incorrectas');
+  return res.json();
+}
+async function authRefresh(refresh_token) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+    method: 'POST',
+    headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refresh_token })
+  });
+  if (!res.ok) throw new Error('No se pudo refrescar la sesión');
+  return res.json();
+}
+function programarRefresco() {
+  if (refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(async () => {
+    const s = getSesion();
+    if (!s) return;
+    try { guardarSesion(await authRefresh(s.refresh_token)); }
+    catch { borrarSesion(); location.reload(); }
+  }, REFRESH_MS);
+}
+async function consultarRol() {
+  const s = getSesion();
+  const token = s ? s.access_token : SUPABASE_KEY;
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/mi_perfil`, {
+    method: 'POST',
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: '{}'
+  });
+  if (!res.ok) throw new Error(await res.text());
+  const perfil = await res.json();
+  return perfil && perfil[0] ? perfil[0].rol : null;
+}
 
 function entrarApp() {
   document.getElementById('login-screen').style.display = 'none';
@@ -895,22 +938,42 @@ function entrarApp() {
   init();
 }
 
-function checkPin() {
-  const val = document.getElementById('pin-input').value;
-  if (val === PIN) {
-    ccAbrirSesion(GRUPO);
+async function checkPin() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('pin-input').value;
+  document.getElementById('login-error').textContent = '';
+  try {
+    const sesion = await authPassword(email, password);
+    guardarSesion(sesion);
+    const rol = await consultarRol();
+    if (rol !== 'admin') throw new Error('Sin permiso');
+    programarRefresco();
     entrarApp();
-  } else {
-    document.getElementById('login-error').textContent = 'Código incorrecto';
+  } catch (e) {
+    borrarSesion();
+    document.getElementById('login-error').textContent = 'Email o contraseña incorrectos';
     document.getElementById('pin-input').value = '';
   }
 }
 document.getElementById('pin-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkPin(); });
 
 function cerrarSesion() {
-  ccCerrarSesion(GRUPO);
+  if (refreshTimer) clearInterval(refreshTimer);
+  borrarSesion();
   location.reload();
 }
+
+(async function comprobarSesionGuardada(){
+  const s = getSesion();
+  if (!s) return;
+  try {
+    guardarSesion(await authRefresh(s.refresh_token));
+    const rol = await consultarRol();
+    if (rol !== 'admin') throw new Error('Sin permiso');
+    programarRefresco();
+    entrarApp();
+  } catch { borrarSesion(); }
+})();
 
 // ─── NAVIGATION ───────────────────────────────────────────────
 function showPage(id) {
@@ -1055,7 +1118,7 @@ function pintarIndicadoresOrden() {
 // ─── SUPABASE ─────────────────────────────────────────────────
 async function sbGet(table, params = '') {
   const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${sesionToken()}` }
   });
   return r.json();
 }
@@ -1065,7 +1128,7 @@ async function sbPost(table, body) {
     method: 'POST',
     headers: {
       apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
+      Authorization: `Bearer ${sesionToken()}`,
       'Content-Type': 'application/json',
       Prefer: 'return=representation'
     },
@@ -1079,7 +1142,7 @@ async function sbPatch(table, id, body) {
     method: 'PATCH',
     headers: {
       apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
+      Authorization: `Bearer ${sesionToken()}`,
       'Content-Type': 'application/json',
       Prefer: 'return=representation'
     },
@@ -1258,7 +1321,7 @@ async function guardarEdicion() {
     // Delete existing and reinsert
     await fetch(`${SUPABASE_URL}/rest/v1/movimientos_visa?movimiento_id=eq.${editando.id}`, {
       method: 'DELETE',
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${sesionToken()}` }
     });
     if (window._visaRows.length > 0) {
       await sbPost('movimientos_visa', window._visaRows.map(r => ({...r, movimiento_id: editando.id})));
@@ -1588,7 +1651,7 @@ async function guardarCampoVisa(id, campo, valor, el) {
   }
   await fetch(`${SUPABASE_URL}/rest/v1/movimientos_visa?id=eq.${id}`, {
     method: 'PATCH',
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${sesionToken()}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
   const m = tarjetasCache.find(x => x.id === id);
@@ -2034,7 +2097,7 @@ async function guardarEdicionVisa() {
     method: 'PATCH',
     headers: {
       apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
+      Authorization: `Bearer ${sesionToken()}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(body)
@@ -2103,7 +2166,7 @@ async function guardarConcepto() {
   if (editandoConcepto) {
     await fetch(`${SUPABASE_URL}/rest/v1/conceptos?id=eq.${editandoConcepto}`, {
       method: 'PATCH',
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${sesionToken()}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ area, nombre, orden })
     });
   } else {
@@ -2120,7 +2183,7 @@ async function eliminarConcepto(id) {
   if (!confirm('¿Eliminar este concepto?')) return;
   await fetch(`${SUPABASE_URL}/rest/v1/conceptos?id=eq.${id}`, {
     method: 'PATCH',
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${sesionToken()}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ activo: false })
   });
   await cargarConceptos();
@@ -2142,7 +2205,7 @@ function toast(msg) {
 }
 
 // Si ya hay sesión abierta en otra app del grupo, entrar directo
-if (ccSesionActiva(GRUPO)) entrarApp();
+
 
 </script>
 </body>
