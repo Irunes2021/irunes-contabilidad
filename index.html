@@ -1,915 +1,333 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Contabilidad — CC Irunes</title>
-  <style>
-    :root {
-      --bg: #f7f8fa;
-      --surface: #ffffff;
-      --border: #e2e6ea;
-      --text: #1a1d23;
-      --muted: #6b7280;
-      --accent: #d62828;
-      --accent-soft: #fef2f2;
-      --escuela: #1d4ed8;
-      --escuela-soft: #eff6ff;
-      --sociedad: #15803d;
-      --sociedad-soft: #f0fdf4;
-      --warn: #d97706;
-      --warn-soft: #fffbeb;
-      --radius: 8px;
-      --shadow: 0 1px 3px rgba(0,0,0,0.08);
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    /* LOGIN */
-    #login-screen {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--text);
-    }
-    .login-box {
-      background: var(--surface);
-      border-radius: 12px;
-      padding: 40px;
-      width: 320px;
-      text-align: center;
-    }
-    .login-box .logo {
-      font-size: 28px;
-      font-weight: 800;
-      color: var(--accent);
-      letter-spacing: -1px;
-      margin-bottom: 4px;
-    }
-    .login-box .subtitle {
-      color: var(--muted);
-      font-size: 12px;
-      margin-bottom: 28px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-    .login-box input {
-      width: 100%;
-      padding: 10px 14px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      font-size: 18px;
-      text-align: center;
-      letter-spacing: 6px;
-      margin-bottom: 12px;
-    }
-    .login-box input:focus { outline: 2px solid var(--accent); border-color: transparent; }
-    .login-box .error { color: var(--accent); font-size: 12px; margin-bottom: 10px; min-height: 18px; }
-
-    /* APP SHELL */
-    #app { display: none; min-height: 100vh; }
-
-    header {
-      background: var(--text);
-      color: white;
-      padding: 0 24px;
-      height: 52px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    .header-logo { font-weight: 800; font-size: 16px; color: white; letter-spacing: -0.5px; }
-    .header-logo span { color: var(--accent); }
-    .header-right { display: flex; align-items: center; gap: 16px; }
-    .temporada-badge {
-      background: rgba(255,255,255,0.1);
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 12px;
-      color: rgba(255,255,255,0.7);
-    }
-
-    /* NAV TABS */
-    .nav-tabs {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 0 24px;
-      display: flex;
-      gap: 0;
-    }
-    .nav-tab {
-      padding: 14px 18px;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--muted);
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: all 0.15s;
-      white-space: nowrap;
-    }
-    .nav-tab:hover { color: var(--text); }
-    .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-
-    /* MAIN */
-    main { padding: 24px; max-width: 1200px; margin: 0 auto; }
-
-    .page { display: none; }
-    .page.active { display: block; }
-
-    /* CARDS */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-    }
-    .card-header {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .card-title { font-weight: 600; font-size: 14px; }
-    .card-body { padding: 20px; }
-
-    /* SUMMARY CARDS */
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-    .stat-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 18px 20px;
-    }
-    .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 6px; }
-    .stat-value { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
-    .stat-value.positive { color: var(--sociedad); }
-    .stat-value.negative { color: var(--accent); }
-    .stat-value.neutral { color: var(--text); }
-    .stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
-
-    /* MONTH SELECTOR */
-    .month-nav {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-    .month-btn {
-      padding: 6px 14px;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      font-size: 12px;
-      cursor: pointer;
-      background: var(--surface);
-      color: var(--muted);
-      transition: all 0.15s;
-    }
-    .month-btn:hover { border-color: var(--accent); color: var(--accent); }
-    .month-btn.active { background: var(--accent); border-color: var(--accent); color: white; font-weight: 600; }
-    .month-btn.has-data { color: var(--text); font-weight: 500; }
-
-    /* UPLOAD ZONE */
-    .upload-zone {
-      border: 2px dashed var(--border);
-      border-radius: var(--radius);
-      padding: 40px;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.2s;
-      background: var(--bg);
-    }
-    .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); background: var(--accent-soft); }
-    .upload-zone .upload-icon { font-size: 32px; margin-bottom: 10px; }
-    .upload-zone p { color: var(--muted); font-size: 13px; }
-    .upload-zone strong { color: var(--text); }
-    #file-input { display: none; }
-
-    /* BUTTONS */
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 16px;
-      border-radius: var(--radius);
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      border: none;
-      transition: all 0.15s;
-    }
-    .btn-primary { background: var(--accent); color: white; }
-    .btn-primary:hover { background: #b91c1c; }
-    .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
-    .btn-secondary:hover { background: var(--bg); }
-    .btn-sm { padding: 5px 10px; font-size: 12px; }
-    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    /* TABLE */
-    .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; }
-    th {
-      text-align: left;
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--muted);
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-    }
-    td {
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-      vertical-align: middle;
-    }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: var(--bg); }
-
-    .importe-pos { color: var(--sociedad); font-weight: 600; }
-    .importe-neg { color: var(--accent); font-weight: 600; }
-
-    /* BADGES */
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 2px 8px;
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: 600;
-    }
-    .badge-escuela { background: var(--escuela-soft); color: var(--escuela); }
-    .badge-sociedad { background: var(--sociedad-soft); color: var(--sociedad); }
-    .badge-warn { background: var(--warn-soft); color: var(--warn); }
-
-    /* SELECT / INPUT inline */
-    select, input[type="text"] {
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 5px 8px;
-      font-size: 13px;
-      background: white;
-      color: var(--text);
-    }
-    select:focus, input[type="text"]:focus { outline: 2px solid var(--accent); border-color: transparent; }
-
-    /* TOOLBAR */
-    .toolbar {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 16px;
-      flex-wrap: wrap;
-    }
-    .toolbar-spacer { flex: 1; }
-
-    /* PENDING COUNT */
-    .pending-dot {
-      display: inline-block;
-      width: 6px; height: 6px;
-      background: var(--warn);
-      border-radius: 50%;
-      margin-left: 4px;
-      vertical-align: middle;
-    }
-
-    /* MODAL */
-    .modal-overlay {
-      display: none;
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.4);
-      z-index: 200;
-      align-items: center;
-      justify-content: center;
-    }
-    .modal-overlay.open { display: flex; }
-    .modal {
-      background: var(--surface);
-      border-radius: 12px;
-      width: 90%;
-      max-width: 900px;
-      max-height: 85vh;
-      display: flex;
-      flex-direction: column;
-    }
-    .modal-header {
-      padding: 18px 24px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .modal-body { padding: 20px 24px; overflow-y: auto; flex: 1; }
-    .modal-footer {
-      padding: 14px 24px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-    }
-    .modal-close { cursor: pointer; color: var(--muted); font-size: 20px; line-height: 1; background: none; border: none; }
-
-    /* TOAST */
-    #toast {
-      position: fixed;
-      bottom: 24px; right: 24px;
-      background: var(--text);
-      color: white;
-      padding: 12px 18px;
-      border-radius: var(--radius);
-      font-size: 13px;
-      opacity: 0;
-      transition: opacity 0.3s;
-      z-index: 999;
-      pointer-events: none;
-    }
-    #toast.show { opacity: 1; }
-
-    /* RESUMEN SECTION */
-    .resumen-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-    }
-    @media (max-width: 700px) { .resumen-grid { grid-template-columns: 1fr; } }
-
-    .concepto-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 8px 0;
-      border-bottom: 1px solid var(--border);
-      font-size: 13px;
-    }
-    .concepto-row:last-child { border-bottom: none; }
-    .concepto-row .label { color: var(--text); }
-    .concepto-row .valor { font-weight: 600; }
-
-    /* LOADING */
-    .spinner {
-      width: 18px; height: 18px;
-      border: 2px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.6s linear infinite;
-      display: inline-block;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .empty-state {
-      text-align: center;
-      padding: 48px 20px;
-      color: var(--muted);
-    }
-    .empty-state .icon { font-size: 36px; margin-bottom: 10px; }
-    .empty-state p { font-size: 13px; }
-    .th-sort { cursor: pointer; user-select: none; white-space: nowrap; }
-    .th-sort:hover { color: var(--accent); }
-    .sort-ind { font-size: 10px; color: var(--accent); }
-    .month-btn.year-btn { font-weight: 700; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CC Irunés · Sociedad</title>
+<link rel="icon" href="https://app.ccirunes.com/icon-512-maskable.png">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0d1b3e; --navy-2:#132552; --line:#22376b;
+  --paper:#f5f3ee; --ink:#0d1b3e; --muted:#6b7794;
+  --ok:#1a7f5a; --bad:#c0392b; --warn:#b8860b; --gold:#c9a227;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:'DM Sans',system-ui,sans-serif}
+header{background:var(--navy);color:#fff;padding:18px 24px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+header h1{font-family:'Playfair Display',serif;font-size:24px;margin:0;letter-spacing:.3px}
+header .sub{color:#9db0d8;font-size:12px;letter-spacing:.16em;text-transform:uppercase}
+nav{background:var(--navy-2);display:flex;gap:2px;padding:0 16px;overflow-x:auto}
+nav button{background:none;border:0;color:#9db0d8;font:500 14px 'DM Sans';padding:14px 18px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+nav button.on{color:#fff;border-bottom-color:var(--gold)}
+main{max-width:1100px;margin:0 auto;padding:24px 16px 80px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px}
+.card{background:#fff;border:1px solid #dcd8cd;border-left:4px solid var(--navy);border-radius:6px;padding:16px}
+.card .lbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.card .val{font-family:'DM Mono',monospace;font-size:24px;font-weight:500;margin-top:6px}
+.card.big{border-left-color:var(--gold)}
+.pos{color:var(--ok)} .neg{color:var(--bad)}
+h2{font-family:'Playfair Display',serif;font-size:19px;margin:28px 0 12px}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #dcd8cd;border-radius:6px;overflow:hidden}
+th{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 12px;border-bottom:1px solid #dcd8cd;font-weight:500}
+td{padding:10px 12px;border-bottom:1px solid #eee9dd;font-size:14px}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;font-family:'DM Mono',monospace}
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500}
+.tag.ok{background:#e3f3ec;color:var(--ok)} .tag.no{background:#fdeceb;color:var(--bad)}
+.tag.wait{background:#fdf4e0;color:var(--warn)} .tag.gris{background:#eceae4;color:var(--muted)}
+button.act{background:var(--navy);color:#fff;border:0;border-radius:5px;padding:8px 14px;font:500 13px 'DM Sans';cursor:pointer}
+button.act:hover{background:var(--navy-2)}
+button.act.ghost{background:none;color:var(--navy);border:1px solid var(--line)}
+button.act.mini{padding:5px 10px;font-size:12px}
+input,select{font:400 14px 'DM Sans';padding:8px 10px;border:1px solid #cfcabd;border-radius:5px;background:#fff}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:14px}
+.row label{display:flex;flex-direction:column;gap:4px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.aviso{background:#fdf4e0;border-left:4px solid var(--warn);padding:12px 14px;border-radius:5px;font-size:13px;margin-bottom:20px}
+.aviso b{display:block;margin-bottom:3px}
+.gate{max-width:320px;margin:80px auto;text-align:center}
+.gate input{width:100%;text-align:center;font-family:'DM Mono';font-size:18px;margin:14px 0}
+.hide{display:none}
+.mini{font-size:12px;color:var(--muted)}
+.notas-lote{background:#fbfaf6;font-size:13px;padding:8px 12px;border-bottom:1px solid #eee9dd}
+.efect{color:var(--warn);font-weight:500}
+.warnc{color:var(--warn)}
+th.ord{cursor:pointer;user-select:none}
+th.ord:hover{color:var(--ink)}
+th.ord i{font-style:normal;color:var(--gold);margin-left:5px}
+</style>
 </head>
 <body>
 
-<!-- LOGIN -->
-<div id="login-screen">
-  <div class="login-box">
-    <div class="logo">irunes</div>
-    <div class="subtitle">Contabilidad</div>
-    <input type="email" id="login-email" placeholder="tu@ccirunes.com" style="margin-bottom:8px">
-    <input type="password" id="pin-input" placeholder="Contraseña" autofocus>
-    <div class="error" id="login-error"></div>
-    <button class="btn btn-primary" style="width:100%" onclick="checkPin()">Entrar</button>
-  </div>
+<div id="gate" class="gate">
+  <h1 style="font-family:'Playfair Display',serif">Sociedad</h1>
+  <p class="mini">Contabilidad de la Sociedad Gastronómica</p>
+  <input id="login-email" type="email" placeholder="tu@ccirunes.com" autocomplete="username" style="letter-spacing:0;font-family:'DM Sans',system-ui,sans-serif;font-size:14px;margin-bottom:0">
+  <input id="pin-input" type="password" placeholder="Contraseña" autocomplete="current-password">
+  <button class="act" style="width:100%" onclick="checkPin()">Entrar</button>
+  <p id="login-error" class="mini" style="color:var(--bad)"></p>
 </div>
 
-<!-- APP -->
-<div id="app">
-  <header>
-    <div class="header-logo">CC <span>irunes</span> · Contabilidad</div>
-    <div class="header-right">
-      <div class="temporada-badge" id="temporada-label">25-26</div>
-    </div>
-  </header>
+<div id="app" class="hide">
+<header>
+  <h1>CC Irunés · Sociedad</h1>
+  <span class="sub">Caja y TPV</span>
+</header>
+<nav>
+  <button class="on" onclick="tab('caja',this)">Arqueo de caja</button>
+  <button onclick="tab('tpv',this)">Conciliación TPV</button>
+  <button onclick="tab('ctrl',this)">Control mensual</button>
+  <button onclick="tab('bod',this)">Bodega</button>
+  <button onclick="tab('pre',this)">Precios</button>
+</nav>
+<main>
 
-  <div class="nav-tabs">
-    <div class="nav-tab active" onclick="showPage('movimientos')">Movimientos</div>
-    <div class="nav-tab" onclick="showPage('resumen')">Resumen</div>
-    <div class="nav-tab" onclick="showPage('importar')">Importar XLS</div>
-    <div class="nav-tab" onclick="showPage('config')">Configuración</div>
-    <div class="nav-tab" onclick="showPage('tarjetas')">Tarjetas</div>
+<!-- ============ CAJA ============ -->
+<section id="t-caja">
+  <div id="aviso-ancla" class="aviso hide">
+    <b>El saldo aún no es auditable</b>
+    No hay saldo inicial registrado. Hasta que cuentes el dinero físico y lo grabes abajo,
+    este saldo ignora todo el efectivo gastado sin apuntar.
   </div>
 
-  <main>
-    <!-- MOVIMIENTOS PAGE -->
-    <div class="page active" id="page-movimientos">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-        <div class="month-nav" id="month-nav" style="margin-bottom:0;flex:1"></div>
-        <select id="filtro-mov-area" onchange="aplicarFiltroMovimientos()" style="font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:6px">
-          <option value="">Todas las áreas</option>
-          <option value="Escuela">Escuela</option>
-          <option value="Sociedad">Sociedad</option>
-          <option value="Visas">Visas</option>
-          <option value="???">Sin categorizar</option>
-        </select>
-        <select id="filtro-mov-concepto" onchange="aplicarFiltrosCliente()" style="font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:6px">
-          <option value="">Todos los conceptos</option>
-        </select>
-        <select id="filtro-mov-factura" onchange="aplicarFiltrosCliente()" style="font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:6px">
-          <option value="">Factura: todas</option>
-          <option value="si">Con factura</option>
-          <option value="no">Sin factura</option>
-        </select>
-        <select id="filtro-mov-mes-sel" onchange="aplicarFiltroMovimientos()" style="font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:6px">
-          <option value="">Todos los meses</option>
-          <option value="11">Noviembre</option>
-          <option value="12">Diciembre</option>
-          <option value="1">Enero</option>
-          <option value="2">Febrero</option>
-          <option value="3">Marzo</option>
-          <option value="4">Abril</option>
-          <option value="5">Mayo</option>
-          <option value="6">Junio</option>
-          <option value="7">Julio</option>
-          <option value="8">Agosto</option>
-          <option value="9">Septiembre</option>
-          <option value="10">Octubre</option>
-        </select>
-      </div>
-
-      <div class="summary-grid" id="mes-stats">
-        <div class="stat-card">
-          <div class="stat-label">Ingresos</div>
-          <div class="stat-value positive" id="stat-ingresos">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Gastos</div>
-          <div class="stat-value negative" id="stat-gastos">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Resultado</div>
-          <div class="stat-value neutral" id="stat-resultado">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Sin categorizar</div>
-          <div class="stat-value" id="stat-pendientes" style="color:var(--warn)">—</div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title" id="tabla-titulo">Movimientos</div>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-secondary btn-sm" onclick="exportarExcel()">⬇ Excel</button>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table id="tabla-movimientos">
-            <thead>
-              <tr>
-                <th class="th-sort" onclick="ordenarPor('fecha')">Fecha <span class="sort-ind" data-col="fecha"></span></th>
-                <th class="th-sort" onclick="ordenarPor('concepto_bancario')">Concepto bancario <span class="sort-ind" data-col="concepto_bancario"></span></th>
-                <th class="th-sort" style="text-align:right" onclick="ordenarPor('importe')">Importe <span class="sort-ind" data-col="importe"></span></th>
-                <th class="th-sort" onclick="ordenarPor('imputar_a')">Área <span class="sort-ind" data-col="imputar_a"></span></th>
-                <th class="th-sort" onclick="ordenarPor('concepto')">Concepto <span class="sort-ind" data-col="concepto"></span></th>
-                <th class="th-sort" onclick="ordenarPor('factura_si')">Factura <span class="sort-ind" data-col="factura_si"></span></th>
-              </tr>
-            </thead>
-            <tbody id="tabla-body">
-              <tr><td colspan="7"><div class="empty-state"><div class="icon">📂</div><p>Selecciona un mes o importa un extracto bancario</p></div></td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- RESUMEN PAGE -->
-    <div class="page" id="page-resumen">
-      <h2 style="font-size:18px;font-weight:700;margin-bottom:20px">Resumen temporada <span id="resumen-temporada">25-26</span></h2>
-      <div class="resumen-grid">
-        <div class="card">
-          <div class="card-header"><div class="card-title" style="color:var(--escuela)">Escuela de Ciclismo</div></div>
-          <div class="card-body">
-            <div id="resumen-escuela-ingresos"></div>
-            <div style="border-top:2px solid var(--border);margin:12px 0;padding-top:12px">
-              <div id="resumen-escuela-gastos"></div>
-            </div>
-            <div class="concepto-row" style="font-weight:700">
-              <span>Resultado</span>
-              <span id="resumen-escuela-total" class="valor">—</span>
-            </div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-header"><div class="card-title" style="color:var(--sociedad)">Sociedad Gastronómica</div></div>
-          <div class="card-body">
-            <div id="resumen-sociedad-ingresos"></div>
-            <div style="border-top:2px solid var(--border);margin:12px 0;padding-top:12px">
-              <div id="resumen-sociedad-gastos"></div>
-            </div>
-            <div class="concepto-row" style="font-weight:700">
-              <span>Resultado</span>
-              <span id="resumen-sociedad-total" class="valor">—</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div style="margin-top:16px;text-align:right">
-        <button class="btn btn-secondary" onclick="exportarResumen()">⬇ Exportar informe</button>
-      </div>
-    </div>
-
-    <!-- IMPORTAR PAGE -->
-    <div class="page" id="page-importar">
-      <div class="card" style="max-width:600px;margin:0 auto">
-        <div class="card-header"><div class="card-title">Importar extracto bancario</div></div>
-        <div class="card-body">
-          <p style="color:var(--muted);margin-bottom:20px;font-size:13px">
-            Descarga el extracto XLS desde la web del banco (BBK) y súbelo aquí. Los movimientos se categorizarán automáticamente según patrones conocidos.
-          </p>
-          <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()"
-               ondragover="event.preventDefault();this.classList.add('drag')"
-               ondragleave="this.classList.remove('drag')"
-               ondrop="handleDrop(event)">
-            <div class="upload-icon">📄</div>
-            <p><strong>Haz clic para seleccionar</strong> o arrastra el fichero XLS aquí</p>
-            <p style="margin-top:6px;font-size:12px">Formato: extracto BBK (.xls)</p>
-          </div>
-          <input type="file" id="file-input" accept=".xls,.xlsx" onchange="handleFile(this.files[0])">
-          <div id="import-diag" style="display:none;margin-top:16px;padding:14px 16px;border:1px solid;border-radius:8px;font-size:13px;line-height:1.55"></div>
-          <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
-            <p style="font-size:12px;color:var(--muted);margin-bottom:8px">O importa un fichero JSON pre-categorizado:</p>
-            <input type="file" id="file-input-json" accept=".json" onchange="handleJsonFile(this.files[0])" style="font-size:12px">
-          </div>
-
-          <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border)">
-            <p style="font-weight:600;font-size:13px;margin-bottom:6px">Extractos de tarjetas (Visa / Viat)</p>
-            <p style="color:var(--muted);font-size:13px;margin-bottom:14px">Sube uno o varios XLS de tarjetas. Se vincularán automáticamente al cargo correspondiente en el extracto bancario.</p>
-            <div class="upload-zone" id="upload-zone-visa" onclick="document.getElementById('file-input-visa').click()"
-                 ondragover="event.preventDefault();this.classList.add('drag')"
-                 ondragleave="this.classList.remove('drag')"
-                 ondrop="handleDropVisa(event)">
-              <div class="upload-icon">💳</div>
-              <p><strong>Haz clic para seleccionar</strong> o arrastra los ficheros XLS aquí</p>
-              <p style="margin-top:6px;font-size:12px">Visa o Viat — puedes subir varios a la vez</p>
-            </div>
-            <input type="file" id="file-input-visa" accept=".xls,.xlsx" multiple onchange="handleFilesVisa(this.files)">
-            <div id="preview-visa-area" style="display:none;margin-top:16px"></div>
-          </div>
-
-          <div id="preview-area" style="display:none;margin-top:20px">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-              <div>
-                <strong id="preview-count"></strong>
-                <span style="color:var(--muted);font-size:12px" id="preview-period"></span>
-              </div>
-              <div style="display:flex;gap:8px">
-                <button class="btn btn-secondary btn-sm" onclick="cancelarImport()">Cancelar</button>
-                <button class="btn btn-primary btn-sm" id="btn-guardar" onclick="guardarMovimientos()">Guardar en base de datos</button>
-              </div>
-            </div>
-            <div class="table-wrap" style="max-height:400px;overflow-y:auto">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Concepto</th>
-                    <th style="text-align:right">Importe</th>
-                    <th>Área</th>
-                    <th>Concepto básico</th>
-                  </tr>
-                </thead>
-                <tbody id="preview-body"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- TARJETAS PAGE -->
-    <div class="page" id="page-tarjetas">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-        <h2 style="font-size:18px;font-weight:700">Movimientos de tarjetas</h2>
-        <div style="display:flex;gap:10px;align-items:center">
-          <select id="filtro-tarjeta-mes" onchange="cargarTarjetas()" style="font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:6px">
-            <option value="">Todos los meses</option>
-            <option value="11">Noviembre</option>
-            <option value="12">Diciembre</option>
-            <option value="1">Enero</option>
-            <option value="2">Febrero</option>
-            <option value="3">Marzo</option>
-            <option value="4">Abril</option>
-            <option value="5">Mayo</option>
-            <option value="6">Junio</option>
-            <option value="7">Julio</option>
-            <option value="8">Agosto</option>
-            <option value="9">Septiembre</option>
-            <option value="10">Octubre</option>
-          </select>
-          <select id="filtro-tarjeta-titular" onchange="cargarTarjetas()" style="font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:6px">
-            <option value="">Todos los titulares</option>
-          </select>
-          <button class="btn btn-secondary btn-sm" onclick="exportarTarjetas()">⬇ Excel</button>
-        </div>
-      </div>
-
-      <!-- Resumen por titular -->
-      <div id="tarjetas-resumen" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px"></div>
-
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title" id="tarjetas-titulo">Movimientos de tarjetas</div>
-          <div id="tarjetas-total" style="font-weight:700;color:var(--accent)"></div>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Titular</th>
-                <th>Tipo</th>
-                <th>Concepto</th>
-                <th>Localidad</th>
-                <th style="text-align:right">Importe</th>
-                <th>Área</th>
-                <th>Concepto contable</th>
-              </tr>
-            </thead>
-            <tbody id="tarjetas-body">
-              <tr><td colspan="8"><div class="empty-state"><div class="icon">💳</div><p>Importa los extractos de tarjetas para verlos aquí</p></div></td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- CONFIG PAGE -->
-    <div class="page" id="page-config">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-        <h2 style="font-size:18px;font-weight:700">Conceptos contables</h2>
-        <button class="btn btn-primary" onclick="abrirNuevoConcepto()">+ Nuevo concepto</button>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
-        <div class="card">
-          <div class="card-header"><div class="card-title" style="color:var(--escuela)">Escuela de Ciclismo</div></div>
-          <div class="table-wrap"><table>
-            <thead><tr><th>Concepto</th><th>Orden</th><th></th></tr></thead>
-            <tbody id="config-escuela-body"></tbody>
-          </table></div>
-        </div>
-        <div class="card">
-          <div class="card-header"><div class="card-title" style="color:var(--sociedad)">Sociedad Gastronómica</div></div>
-          <div class="table-wrap"><table>
-            <thead><tr><th>Concepto</th><th>Orden</th><th></th></tr></thead>
-            <tbody id="config-sociedad-body"></tbody>
-          </table></div>
-        </div>
-      </div>
-    </div>
-  </main>
-</div>
-
-<!-- MODAL EDITAR MOVIMIENTO -->
-<div class="modal-overlay" id="modal-editar">
-  <div class="modal">
-    <div class="modal-header">
-      <div>
-        <div style="font-weight:700;font-size:15px" id="modal-concepto-titulo"></div>
-        <div style="font-size:12px;color:var(--muted)" id="modal-fecha-titulo"></div>
-      </div>
-      <button class="modal-close" onclick="cerrarModal('modal-editar')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
-        <div>
-          <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">ÁREA</label>
-          <select id="edit-area" style="width:100%">
-            <option value="Escuela">Escuela</option>
-            <option value="Sociedad">Sociedad</option>
-            <option value="???">Sin categorizar</option>
-          </select>
-        </div>
-        <div>
-          <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">CONCEPTO</label>
-          <select id="edit-concepto" style="width:100%" onchange="onConceptoChange()">
-            <option value="">— selecciona —</option>
-          </select>
-        </div>
-        <div>
-          <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">FACTURA</label>
-          <select id="edit-factura" style="width:100%">
-            <option value="false">No</option>
-            <option value="true">Sí</option>
-          </select>
-        </div>
-        <div>
-          <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">Nº FACTURA</label>
-          <input type="text" id="edit-nfactura" style="width:100%" placeholder="opcional">
-        </div>
-        <div style="grid-column:1/-1">
-          <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">OBSERVACIONES</label>
-          <input type="text" id="edit-obs" style="width:100%" placeholder="opcional">
-        </div>
-      </div>
-
-      <!-- Detalle visa (solo si es visa) -->
-      <div id="visa-section" style="display:none">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <strong style="font-size:13px">Detalle de la visa</strong>
-          <button class="btn btn-secondary btn-sm" onclick="addVisaRow()">+ Añadir línea</button>
-        </div>
-        <div id="visa-total-check" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
-        <table style="width:100%">
-          <thead>
-            <tr>
-              <th>Fecha</th>
-              <th>Concepto</th>
-              <th style="text-align:right">Importe</th>
-              <th>Área</th>
-              <th>Concepto básico</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="visa-detail-body"></tbody>
-        </table>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="cerrarModal('modal-editar')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarEdicion()">Guardar cambios</button>
-    </div>
+  <div class="cards">
+    <div class="card"><div class="lbl">Ingresos en caja</div><div class="val pos" id="c-entradas">—</div></div>
+    <div class="card"><div class="lbl">Pagos desde caja</div><div class="val neg" id="c-pagos">—</div></div>
+    <div class="card"><div class="lbl">Traspasado al banco</div><div class="val neg" id="c-banco">—</div></div>
+    <div class="card big"><div class="lbl">Saldo teórico en caja</div><div class="val" id="c-saldo">—</div></div>
   </div>
-</div>
 
-<!-- MODAL EDITAR VISA -->
-<div class="modal-overlay" id="modal-editar-visa">
-  <div class="modal" style="max-width:500px">
-    <div class="modal-header">
-      <div>
-        <div style="font-weight:700;font-size:15px" id="modal-visa-titulo"></div>
-        <div style="font-size:12px;color:var(--muted)" id="modal-visa-subtitulo"></div>
-      </div>
-      <button class="modal-close" onclick="cerrarModal('modal-editar-visa')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-        <div>
-          <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">ÁREA</label>
-          <select id="visa-edit-area" style="width:100%" onchange="updateVisaConceptoSelect()">
-            <option value="Escuela">Escuela</option>
-            <option value="Sociedad">Sociedad</option>
-            <option value="???">Sin categorizar</option>
-          </select>
-        </div>
-        <div>
-          <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">CONCEPTO</label>
-          <select id="visa-edit-concepto" style="width:100%">
-            <option value="">— selecciona —</option>
-          </select>
-        </div>
-        <div style="grid-column:1/-1">
-          <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">OBSERVACIONES</label>
-          <input type="text" id="visa-edit-obs" style="width:100%" placeholder="opcional">
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="cerrarModal('modal-editar-visa')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarEdicionVisa()">Guardar</button>
-    </div>
+  <div class="row">
+    <label>Contar desde<input type="date" id="k-desde" value="2025-11-01" onchange="pintarCaja()"></label>
+    <span class="mini" style="padding-bottom:10px">Las tres cifras usan este mismo periodo.</span>
   </div>
-</div>
 
-<!-- MODAL CONCEPTO -->
-<div class="modal-overlay" id="modal-concepto">
-  <div class="modal" style="max-width:420px">
-    <div class="modal-header">
-      <div style="font-weight:700;font-size:15px" id="modal-concepto-title">Nuevo concepto</div>
-      <button class="modal-close" onclick="cerrarModal('modal-concepto')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div style="display:grid;gap:14px">
-        <div>
-          <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">ÁREA</label>
-          <select id="mc-area" style="width:100%">
-            <option value="Escuela">Escuela</option>
-            <option value="Sociedad">Sociedad</option>
-          </select>
-        </div>
-        <div>
-          <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">NOMBRE</label>
-          <input type="text" id="mc-nombre" style="width:100%" placeholder="Nombre del concepto">
-        </div>
-        <div>
-          <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">ORDEN</label>
-          <input type="number" id="mc-orden" style="width:100%" value="99">
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="cerrarModal('modal-concepto')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarConcepto()">Guardar</button>
-    </div>
+  <h2>Registrar movimiento de caja</h2>
+  <div class="row">
+    <label>Fecha<input type="date" id="f-fecha"></label>
+    <label>Tipo<select id="f-tipo">
+      <option value="pago">Pago en metálico</option>
+      <option value="ingreso">Ingreso en caja</option>
+      <option value="traspaso_banco">Ingreso al banco</option>
+      <option value="saldo_inicial">Saldo inicial (recuento)</option>
+      <option value="arqueo">Ajuste por arqueo</option>
+    </select></label>
+    <label>Concepto / Socio<input id="f-concepto" placeholder="Limpieza, nombre del socio…"></label>
+    <label>Categoría<input id="f-cat" placeholder="Ingreso Bodega, Limpieza…" list="l-cat">
+      <datalist id="l-cat"></datalist></label>
+    <label>Nº socio<input id="f-soc" style="width:90px" placeholder="317"></label>
+    <label>Importe €<input id="f-importe" type="number" step="0.01" placeholder="120,00"></label>
+    <button class="act" onclick="guardarCaja()">Guardar</button>
   </div>
+  <p class="mini">Los pagos se restan de la caja: escribe el importe en positivo.</p>
+
+  <h2>Movimientos de caja</h2>
+  <div class="row">
+    <label>Categoría<select id="k-cat" onchange="pintarCaja()"><option value="">Todas</option></select></label>
+    <label>Socio<select id="k-soc" onchange="pintarCaja()">
+      <option value="">Todos</option><option value="sin">Sin asignar</option></select></label>
+  </div>
+  <table><thead><tr>
+    <th>Fecha</th><th>Tipo</th><th>Categoría</th><th>Concepto / Socio</th>
+    <th>Nº socio</th><th class="num">Importe</th><th></th>
+  </tr></thead><tbody id="tb-caja"><tr><td colspan="7" class="mini">Cargando…</td></tr></tbody></table>
+
+  <h2>Ingresos de efectivo en el banco</h2>
+  <p class="mini">Apuntes del banco con concepto «Ingreso efectivo caja». Solo lectura: se editan en Contabilidad.</p>
+  <table><thead><tr>
+    <th>Fecha</th><th>Concepto bancario</th><th class="num">Importe</th>
+  </tr></thead><tbody id="tb-ing"><tr><td colspan="3" class="mini">Cargando…</td></tr></tbody></table>
+</section>
+
+<!-- ============ TPV ============ -->
+<section id="t-tpv" class="hide">
+  <div class="cards">
+    <div class="card"><div class="lbl">Lotes sin conciliar</div><div class="val" id="c-lotes">—</div></div>
+    <div class="card"><div class="lbl">Importe pendiente</div><div class="val" id="c-pend">—</div></div>
+    <div class="card"><div class="lbl">Notas sin lote</div><div class="val" id="c-sueltas">—</div></div>
+    <div class="card"><div class="lbl">Comisiones del periodo</div><div class="val neg" id="c-comis">—</div></div>
+  </div>
+
+  <div class="row">
+    <label>Mostrar desde<input type="date" id="f-desde" value="2026-05-01" onchange="pintarTPV()"></label>
+    <label>Ventana de días<input type="number" id="f-vent" value="4" min="0" max="20" style="width:90px" onchange="pintarTPV()"></label>
+    <button class="act ghost" onclick="pintarTPV()">Recalcular</button>
+  </div>
+  <p class="mini">La búsqueda mira todas las notas pendientes, sean de efectivo o de tarjeta.
+  Si una nota marcada como efectivo encaja en un lote, se cobró realmente con tarjeta:
+  al conciliar se corrige su forma de pago y sale del arqueo de caja.</p>
+
+  <h2>Abonos TPV</h2>
+  <table><thead><tr>
+    <th class="ord" onclick="ordenar('fecha')">Fecha<i id="o-fecha"></i></th>
+    <th class="ord" onclick="ordenar('ref')">Referencia<i id="o-ref"></i></th>
+    <th class="num ord" onclick="ordenar('bruto')">Bruto<i id="o-bruto"></i></th>
+    <th class="num ord" onclick="ordenar('comision')">Comisión<i id="o-comision"></i></th>
+    <th class="ord" onclick="ordenar('estado')">Estado<i id="o-estado"></i></th>
+    <th></th>
+  </tr></thead><tbody id="tb-tpv"><tr><td colspan="6" class="mini">Cargando…</td></tr></tbody></table>
+
+  <h2>Notas de tarjeta sin abono</h2>
+  <p class="mini">Cobradas con tarjeta según la nota, pero sin ningún abono del banco detrás.
+  Puede ser que el abono aún no haya llegado, que se cobrara en efectivo por error, o que la nota esté duplicada.</p>
+  <table><thead><tr>
+    <th>Fecha</th><th>Socio</th><th>Mesa</th><th class="num">Importe</th><th></th>
+  </tr></thead><tbody id="tb-huer"><tr><td colspan="5" class="mini">Cargando…</td></tr></tbody></table>
+</section>
+
+<!-- ============ CONTROL ============ -->
+<section id="t-ctrl" class="hide">
+  <p class="mini">Cada mes, lo cobrado por el datáfono frente a lo que suman las notas.
+  Una diferencia negativa grande significa cobros con tarjeta sin nota detrás.
+  El desfase de liquidación mueve importes de un mes al siguiente, así que mira la tendencia, no un mes suelto.</p>
+  <h2>Notas frente a abonos</h2>
+  <table><thead><tr>
+    <th>Mes</th><th class="num">Notas</th><th class="num">€ notas</th>
+    <th class="num">Lotes</th><th class="num">€ lotes</th><th class="num">Diferencia</th>
+  </tr></thead><tbody id="tb-ctrl"><tr><td colspan="6" class="mini">Cargando…</td></tr></tbody></table>
+</section>
+
+<!-- ============ BODEGA ============ -->
+<section id="t-bod" class="hide">
+  <div class="row">
+    <label>Desde<input type="date" id="b-desde" value="2025-11-01" onchange="pintarBodega()"></label>
+    <label>Hasta<input type="date" id="b-hasta" value="2026-10-31" onchange="pintarBodega()"></label>
+  </div>
+
+  <div class="cards">
+    <div class="card"><div class="lbl">Ingresos</div><div class="val pos" id="b-ing">—</div></div>
+    <div class="card"><div class="lbl">Compras</div><div class="val neg" id="b-com">—</div></div>
+    <div class="card big"><div class="lbl">Margen</div><div class="val" id="b-mar">—</div></div>
+    <div class="card"><div class="lbl">% sobre ingresos</div><div class="val" id="b-pct">—</div></div>
+  </div>
+
+  <div id="b-aviso" class="aviso">
+    <b>Es un margen de caja, no un margen real</b>
+    No incluye la variación de existencias. Si la bodega acaba la temporada con más
+    o menos stock del que empezó, el margen verdadero es distinto. Hace falta un recuento físico.
+  </div>
+
+  <h2>Desglose</h2>
+  <table><thead><tr>
+    <th>Origen</th><th>Detalle</th><th class="num">Movs.</th><th class="num">Importe</th>
+  </tr></thead><tbody id="tb-bod"><tr><td colspan="4" class="mini">Cargando…</td></tr></tbody></table>
+
+  <h2>Compras · detalle</h2>
+  <div class="row">
+    <label>Proveedor<select id="b-prov" onchange="pintarBodega()"><option value="">Todos</option></select></label>
+  </div>
+  <table><thead><tr>
+    <th>Fecha</th><th>Origen</th><th>Concepto</th><th class="num">Importe</th>
+  </tr></thead><tbody id="tb-bodcom"><tr><td colspan="4" class="mini">Cargando…</td></tr></tbody></table>
+
+  <h2>Por proveedor</h2>
+  <table><thead><tr>
+    <th>Proveedor</th><th class="num">Movs.</th><th class="num">Importe</th><th class="num">% compras</th>
+  </tr></thead><tbody id="tb-bodprov"><tr><td colspan="4" class="mini">Cargando…</td></tr></tbody></table>
+
+  <h2>Por meses</h2>
+  <table><thead><tr>
+    <th>Mes</th><th class="num">Efectivo</th><th class="num">Tarjeta</th>
+    <th class="num">Ingresos</th><th class="num">Compras</th><th class="num">Margen</th>
+  </tr></thead><tbody id="tb-bodmes"><tr><td colspan="6" class="mini">Cargando…</td></tr></tbody></table>
+</section>
+
+<!-- ============ PRECIOS ============ -->
+<section id="t-pre" class="hide">
+  <div class="cards">
+    <div class="card"><div class="lbl">Margen medio</div><div class="val" id="p-med">—</div></div>
+    <div class="card"><div class="lbl">Productos con coste</div><div class="val" id="p-con">—</div></div>
+    <div class="card"><div class="lbl">Sin precio de compra</div><div class="val" id="p-sin">—</div></div>
+    <div class="card"><div class="lbl">Ahorro si se compra al mejor</div><div class="val pos" id="p-aho">—</div></div>
+  </div>
+
+  <p class="mini">El margen usa el <b>último</b> precio de compra, que es lo que cuesta reponer hoy.
+  La columna «Mejor» señala el proveedor más barato de los registrados.
+  Editar el precio de venta cambia la carta del TPV: afecta a lo que se cobra desde ese momento.</p>
+
+  <div class="row">
+    <label>Categoría<select id="p-cat" onchange="pintarPrecios()"><option value="">Todas</option></select></label>
+    <label>Ver<select id="p-ver" onchange="pintarPrecios()">
+      <option value="">Todos</option>
+      <option value="sin">Sin precio de compra</option>
+      <option value="bajo">Margen por debajo del 40 %</option>
+      <option value="mejor">Hay proveedor más barato</option>
+    </select></label>
+  </div>
+
+  <table><thead><tr>
+    <th>Producto</th><th>Último proveedor</th><th class="num">Compra</th>
+    <th class="num">Coste c/IVA</th><th class="num">Venta</th><th class="num">Margen</th>
+    <th>Mejor</th><th></th>
+  </tr></thead><tbody id="tb-pre"><tr><td colspan="8" class="mini">Cargando…</td></tr></tbody></table>
+
+  <h2>Registrar precio de compra</h2>
+  <div class="row">
+    <label>Producto<select id="n-carta"></select></label>
+    <label>Proveedor<input id="n-prov" list="l-prov" placeholder="Vinos Arzak">
+      <datalist id="l-prov"></datalist></label>
+    <label>Descripción<input id="n-desc" placeholder="COCA COLA LATA 0.33 C/24"></label>
+    <label>Precio neto €<input id="n-pre" type="number" step="0.001" style="width:110px"></label>
+    <label>Unidades<input id="n-uds" type="number" step="1" value="1" style="width:90px"></label>
+    <label>IVA %<input id="n-iva" type="number" step="1" value="21" style="width:80px"></label>
+    <label>Fecha<input id="n-fec" type="date"></label>
+    <button class="act" onclick="guardarPrecio()">Guardar</button>
+  </div>
+  <p class="mini">Si la factura va por caja, pon el importe de la caja en «Precio neto»
+  y cuántas unidades trae en «Unidades». El género gratis se refleja igual:
+  156 € por 36 botellas del Glorioso son 156 y 36.</p>
+
+  <h2>Histórico del producto seleccionado</h2>
+  <table><thead><tr>
+    <th>Fecha</th><th>Proveedor</th><th>Descripción</th>
+    <th class="num">Neto</th><th class="num">Uds.</th><th class="num">€/ud c/IVA</th><th></th>
+  </tr></thead><tbody id="tb-hist"><tr><td colspan="7" class="mini">Elige un producto arriba.</td></tr></tbody></table>
+</section>
+
+</main>
 </div>
 
-<div id="toast"></div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
+const SUPA = 'https://dbydtwkzknbpifneznsu.supabase.co';
+const KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRieWR0d2t6a25icGlmbmV6bnN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMjMwODIsImV4cCI6MjA5MDc5OTA4Mn0.HcTWBEaI-2EH66mAUAaEM2ppzDG3eCd1ANjopNZdt1g';
 
-const SUPABASE_URL = 'https://dbydtwkzknbpifneznsu.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRieWR0d2t6a25icGlmbmV6bnN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMjMwODIsImV4cCI6MjA5MDc5OTA4Mn0.HcTWBEaI-2EH66mAUAaEM2ppzDG3eCd1ANjopNZdt1g';
+const eur = n => (n||0).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+const c   = n => Math.round(n*100);
+const $   = id => document.getElementById(id);
 
-
-// ─── CONCEPTOS (cargados desde Supabase) ─────────────────────
-let CONCEPTOS = { Escuela: [], Sociedad: [] };
-
-async function cargarConceptos() {
-  const data = await sbGet('conceptos', 'activo=eq.true&order=area.asc,orden.asc');
-  if (!Array.isArray(data)) return;
-  CONCEPTOS.Escuela = data.filter(c => c.area === 'Escuela').map(c => c.nombre);
-  CONCEPTOS.Sociedad = data.filter(c => c.area === 'Sociedad').map(c => c.nombre);
-  CONCEPTOS.Visas = data.filter(c => c.area === 'Visas').map(c => c.nombre);
-}
-
-// ─── REGLAS CATEGORIZACIÓN AUTO ──────────────────────────────
-const REGLAS = [
-  // Sociedad
-  { match: /IBERDROLA/i, area: 'Sociedad', concepto: 'Luz' },
-  { match: /ORANGE|TELEFON/i, area: 'Sociedad', concepto: 'Teléfono e Internet' },
-  { match: /TXINGUDI|AGUA/i, area: 'Sociedad', concepto: 'Agua' },
-  { match: /ARZAC|BAQUE|MAKRO|BM PALMERA|BODEGA/i, area: 'Sociedad', concepto: 'Bodega' },
-  { match: /ABONO TPV/i, area: 'Sociedad', concepto: 'Bodega' },
-  { match: /COMISIONES.*TPV|SERVICIO.*TPV/i, area: 'Sociedad', concepto: 'TPV y Comisiones' },
-  { match: /GAS (NATURAL|SDG|NATURAL SDG)/i, area: 'Sociedad', concepto: 'Gas' },
-  // Escuela - ingresos
-  { match: /REMESA RECIBOS/i, area: 'Escuela', concepto: 'Cuota corredores' },
-  { match: /BIDASOA OPTIKA|BYGUK/i, area: 'Escuela', concepto: 'Patrocinios' },
-  { match: /GIPUZKOAKO TXIRRINDULARITZA|FEDERAZI/i, area: 'Escuela', concepto: 'Premios y dietas' },
-  { match: /TRANSFERENCIA.*IRUN$|AYUNTAMIENTO/i, area: 'Escuela', concepto: 'Subvenciones' },
-  // Escuela - gastos
-  { match: /TRANSFERENCIA A (Jon Morillo|Dani |Daniel Iglesias|Iker Amantegi|Iker Ginzo|Gorka Zamar|Julen Mendi|Koldo Alzaga|Eider Etxaniz|Mikel Maeso|andoitz|Oscar Ginzo|Nestor Corre|Cristina)/i, area: 'Escuela', concepto: 'Monitores y entrenadores' },
-  { match: /TARJETA CREDITO/i, area: 'Visas', concepto: 'Visas' },
-  { match: /EASY GAS|GASOLINA|PETROL/i, area: 'Escuela', concepto: 'Gasolina' },
-  { match: /EUSKADI LOW COST|LOW COST EUSKADI/i, area: 'Escuela', concepto: 'Hoteles, Comidas y Salidas' },
-  { match: /FUNDACION VASCA.*CALIDAD/i, area: 'Escuela', concepto: 'Seguros' },
-  { match: /VIASA|ALLER PEREZ/i, area: 'Escuela', concepto: 'Reparaciones y ITV' },
-  { match: /LICENCIAS|FEDERACION/i, area: 'Escuela', concepto: 'Licencias' },
-];
-
-function categorizar(concepto) {
-  for (const r of REGLAS) {
-    if (r.match.test(concepto)) return { area: r.area, concepto: r.concepto };
-  }
-  return { area: '???', concepto: '' };
-}
-
-// ─── AUTH ─────────────────────────────────────────────────────
+// ─── AUTH: mismo sistema que la app de Contabilidad ───────────
 const SS_KEY = 'cc_contabilidad_session';
-const REFRESH_MS = 50 * 60 * 1000; // 50 min
+const REFRESH_MS = 50 * 60 * 1000;
 let refreshTimer = null;
 
 function getSesion() { try { return JSON.parse(localStorage.getItem(SS_KEY)); } catch { return null; } }
-function sesionToken() { const s = getSesion(); return s ? s.access_token : SUPABASE_KEY; }
+function sesionToken() { const s = getSesion(); return s ? s.access_token : KEY; }
 function guardarSesion(s) { localStorage.setItem(SS_KEY, JSON.stringify(s)); }
 function borrarSesion() { localStorage.removeItem(SS_KEY); }
+function authHeaders(extra={}) {
+  return {apikey:KEY, Authorization:'Bearer '+sesionToken(), 'Content-Type':'application/json', ...extra};
+}
 
 async function authPassword(email, password) {
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+  const res = await fetch(`${SUPA}/auth/v1/token?grant_type=password`, {
     method: 'POST',
-    headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+    headers: { apikey: KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password })
   });
   if (!res.ok) throw new Error('Credenciales incorrectas');
   return res.json();
 }
+
 async function authRefresh(refresh_token) {
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+  const res = await fetch(`${SUPA}/auth/v1/token?grant_type=refresh_token`, {
     method: 'POST',
-    headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+    headers: { apikey: KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify({ refresh_token })
   });
   if (!res.ok) throw new Error('No se pudo refrescar la sesión');
   return res.json();
 }
+
 function programarRefresco() {
   if (refreshTimer) clearInterval(refreshTimer);
   refreshTimer = setInterval(async () => {
@@ -919,12 +337,13 @@ function programarRefresco() {
     catch { borrarSesion(); location.reload(); }
   }, REFRESH_MS);
 }
+
 async function consultarRol() {
   const s = getSesion();
-  const token = s ? s.access_token : SUPABASE_KEY;
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/mi_perfil`, {
+  const token = s ? s.access_token : KEY;
+  const res = await fetch(`${SUPA}/rest/v1/rpc/mi_perfil`, {
     method: 'POST',
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    headers: { apikey: KEY, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: '{}'
   });
   if (!res.ok) throw new Error(await res.text());
@@ -933,15 +352,15 @@ async function consultarRol() {
 }
 
 function entrarApp() {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  init();
+  $('gate').classList.add('hide'); $('app').classList.remove('hide');
+  $('f-fecha').value = new Date().toISOString().slice(0,10);
+  cargarCaja(); cargarTPV();
 }
 
 async function checkPin() {
-  const email = document.getElementById('login-email').value.trim();
-  const password = document.getElementById('pin-input').value;
-  document.getElementById('login-error').textContent = '';
+  const email = $('login-email').value.trim();
+  const password = $('pin-input').value;
+  $('login-error').textContent = '';
   try {
     const sesion = await authPassword(email, password);
     guardarSesion(sesion);
@@ -951,11 +370,11 @@ async function checkPin() {
     entrarApp();
   } catch (e) {
     borrarSesion();
-    document.getElementById('login-error').textContent = 'Email o contraseña incorrectos';
-    document.getElementById('pin-input').value = '';
+    $('login-error').textContent = 'Email o contraseña incorrectos';
+    $('pin-input').value = '';
   }
 }
-document.getElementById('pin-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkPin(); });
+$('pin-input').addEventListener('keydown',e=>{ if(e.key==='Enter') checkPin(); });
 
 function cerrarSesion() {
   if (refreshTimer) clearInterval(refreshTimer);
@@ -975,1238 +394,599 @@ function cerrarSesion() {
   } catch { borrarSesion(); }
 })();
 
-// ─── NAVIGATION ───────────────────────────────────────────────
-function showPage(id) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('page-' + id).classList.add('active');
-  event.target.classList.add('active');
-  if (id === 'resumen') cargarResumen();
-  if (id === 'config') cargarConfig();
-  if (id === 'tarjetas') cargarTarjetas();
+function tab(n,btn){
+  ['caja','tpv','ctrl','bod','pre'].forEach(k=>$('t-'+k).classList.toggle('hide', k!==n));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  if(n==='ctrl') pintarControl();
+  if(n==='bod')  cargarBodega();
+  if(n==='pre')  cargarPrecios();
 }
 
-// ─── STATE ────────────────────────────────────────────────────
-const MESES = ['Nov','Dic','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct'];
-const MESES_NUM = [11,12,1,2,3,4,5,6,7,8,9,10];
-let mesActivo = null;
-let movimientosCache = [];
-let editando = null;
-let pendingImport = [];
-
-// ─── INIT ─────────────────────────────────────────────────────
-async function init() {
-  await cargarConceptos();
-  renderMonthNav();
-  const now = new Date();
-  const mesIdx = MESES_NUM.indexOf(now.getMonth() + 1);
-  if (mesIdx >= 0) selectMes(mesIdx);
+async function api(path, opts={}){
+  const {headers={}, ...rest} = opts;
+  const r = await fetch(SUPA+'/rest/v1/'+path, {...rest, headers:authHeaders(headers)});
+  const txt = await r.text();
+  if(!r.ok) throw new Error(r.status+' · '+txt);
+  return txt.trim() ? JSON.parse(txt) : null;
 }
 
-function renderMonthNav() {
-  const nav = document.getElementById('month-nav');
-  nav.innerHTML = MESES.map((m, i) => `
-    <div class="month-btn" id="mbtn-${i}" onclick="selectMes(${i})">${m}</div>
-  `).join('') + `<div class="month-btn year-btn" id="mbtn-year" onclick="selectTodoAnio()">Todo el año</div>`;
-}
-
-// Carga TODOS los movimientos de la temporada (sin filtro de mes)
-async function selectTodoAnio() {
-  mesActivo = null;
-  document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
-  const by = document.getElementById('mbtn-year');
-  if (by) by.classList.add('active');
-  document.getElementById('filtro-mov-mes-sel').value = '';
-  await aplicarFiltroMovimientos();
-}
-
-async function selectMes(idx) {
-  mesActivo = idx;
-  document.querySelectorAll('.month-btn').forEach((b,i) => {
-    b.classList.toggle('active', i === idx);
-  });
-  // Sync month selector
-  document.getElementById('filtro-mov-mes-sel').value = MESES_NUM[idx];
-  await aplicarFiltroMovimientos();
-}
-
-async function aplicarFiltroMovimientos() {
-  const area = document.getElementById('filtro-mov-area').value;
-  const mesVal = document.getElementById('filtro-mov-mes-sel').value;
-
-  let params = 'temporada=eq.25-26&order=fecha.asc';
-  if (mesVal) params += `&mes=eq.${mesVal}`;
-  if (area) params += `&imputar_a=eq.${encodeURIComponent(area)}`;
-
-  // Update month button highlight
-  if (mesVal) {
-    const idx = MESES_NUM.indexOf(parseInt(mesVal));
-    mesActivo = idx >= 0 ? idx : null;
-    document.querySelectorAll('.month-btn').forEach((b,i) => b.classList.toggle('active', i === idx));
-    document.getElementById('tabla-titulo').textContent = `Movimientos — ${mesVal ? MESES[MESES_NUM.indexOf(parseInt(mesVal))] : 'Todos'}${area ? ' · ' + area : ''}`;
-  } else {
-    mesActivo = null;
-    document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('tabla-titulo').textContent = `Movimientos — Todos los meses${area ? ' · ' + area : ''}`;
-  }
-
-  document.getElementById('tabla-body').innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px"><div class="spinner"></div></td></tr>`;
-  const data = await sbGet('movimientos', params);
-  movimientosCache = Array.isArray(data) ? data : [];
-  rellenarFiltroConceptosMov();
-  aplicarFiltrosCliente();
-}
-
-// Rellena el desplegable de conceptos con los presentes en los movimientos cargados
-function rellenarFiltroConceptosMov() {
-  const sel = document.getElementById('filtro-mov-concepto');
-  if (!sel) return;
-  const prev = sel.value;
-  const lista = [...new Set(movimientosCache.map(m => m.concepto).filter(Boolean))].sort();
-  sel.innerHTML = '<option value="">Todos los conceptos</option>' +
-    lista.map(c => `<option value="${c}" ${c === prev ? 'selected' : ''}>${c}</option>`).join('');
-}
-
-// Filtros de concepto y factura + ordenación (todo en el navegador, instantáneo)
-let _ordenCol = 'fecha';
-let _ordenDir = 'asc';
-let movimientosVista = [];
-
-function aplicarFiltrosCliente() {
-  const con = document.getElementById('filtro-mov-concepto');
-  const fac = document.getElementById('filtro-mov-factura');
-  const cVal = con ? con.value : '';
-  const fVal = fac ? fac.value : '';
-
-  let lista = movimientosCache.slice();
-  if (cVal) lista = lista.filter(m => (m.concepto || '') === cVal);
-  if (fVal === 'si') lista = lista.filter(m => m.factura_si === true);
-  if (fVal === 'no') lista = lista.filter(m => !m.factura_si);
-
-  lista.sort((a, b) => {
-    let va = a[_ordenCol], vb = b[_ordenCol];
-    if (_ordenCol === 'importe') { va = Number(va) || 0; vb = Number(vb) || 0; }
-    else if (_ordenCol === 'factura_si') { va = va ? 1 : 0; vb = vb ? 1 : 0; }
-    else { va = String(va ?? '').toLowerCase(); vb = String(vb ?? '').toLowerCase(); }
-    if (va < vb) return _ordenDir === 'asc' ? -1 : 1;
-    if (va > vb) return _ordenDir === 'asc' ? 1 : -1;
-    return 0;
-  });
-
-  movimientosVista = lista;
-  renderTabla();
-  renderStats();
-  pintarIndicadoresOrden();
-}
-
-function ordenarPor(col) {
-  if (_ordenCol === col) {
-    _ordenDir = (_ordenDir === 'asc') ? 'desc' : 'asc';
-  } else {
-    _ordenCol = col;
-    _ordenDir = (col === 'importe' || col === 'fecha') ? 'desc' : 'asc';
-  }
-  aplicarFiltrosCliente();
-}
-
-function pintarIndicadoresOrden() {
-  document.querySelectorAll('.sort-ind').forEach(el => {
-    el.textContent = (el.dataset.col === _ordenCol) ? (_ordenDir === 'asc' ? '▲' : '▼') : '';
-  });
-}
-
-// ─── SUPABASE ─────────────────────────────────────────────────
-async function sbGet(table, params = '') {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${sesionToken()}` }
-  });
-  return r.json();
-}
-
-async function sbPost(table, body) {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
-    method: 'POST',
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${sesionToken()}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation'
-    },
-    body: JSON.stringify(body)
-  });
-  return r.json();
-}
-
-async function sbPatch(table, id, body) {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
-    method: 'PATCH',
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${sesionToken()}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation'
-    },
-    body: JSON.stringify(body)
-  });
-  return r.json();
-}
-
-// ─── CARGAR MOVIMIENTOS ───────────────────────────────────────
-async function cargarMovimientos(mes) {
-  const tbody = document.getElementById('tabla-body');
-  tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px"><div class="spinner"></div></td></tr>`;
-  const data = await sbGet('movimientos', `mes=eq.${mes}&temporada=eq.25-26&order=fecha.asc`);
-  movimientosCache = Array.isArray(data) ? data : [];
-  renderTabla();
-  renderStats();
-}
-
-function renderTabla() {
-  const datos = (typeof movimientosVista !== 'undefined' && movimientosVista) ? movimientosVista : movimientosCache;
-  const tbody = document.getElementById('tabla-body');
-
-  if (!datos.length) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="icon">📂</div><p>No hay movimientos con estos filtros.</p></div></td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = datos.map(m => {
-    const impClass = m.importe >= 0 ? 'importe-pos' : 'importe-neg';
-    const conceptos = m.imputar_a && CONCEPTOS[m.imputar_a] ? CONCEPTOS[m.imputar_a] : [...CONCEPTOS.Escuela, ...CONCEPTOS.Sociedad];
-    return `<tr>
-      <td style="white-space:nowrap;font-size:12px">${m.fecha}</td>
-      <td style="max-width:280px;font-size:12px">${m.concepto_bancario}</td>
-      <td style="text-align:right" class="${impClass}">${formatEur(m.importe)}</td>
-      <td>
-        <select onchange="guardarCampoMov('${m.id}','imputar_a',this.value,this)" style="font-size:12px;padding:3px 6px;border-radius:5px;border:1px solid var(--border);background:${m.imputar_a==='Escuela'?'#eff6ff':m.imputar_a==='Sociedad'?'#f0fdf4':m.imputar_a==='Visas'?'#f5f3ff':'#fffbeb'};color:${m.imputar_a==='Escuela'?'var(--escuela)':m.imputar_a==='Sociedad'?'var(--sociedad)':m.imputar_a==='Visas'?'#7c3aed':'var(--warn)'}">
-          <option value="Escuela" ${m.imputar_a==='Escuela'?'selected':''}>Escuela</option>
-          <option value="Sociedad" ${m.imputar_a==='Sociedad'?'selected':''}>Sociedad</option>
-          <option value="Visas" ${m.imputar_a==='Visas'?'selected':''}>Visas</option>
-          <option value="???" ${m.imputar_a==='???'?'selected':''}>???</option>
-        </select>
-      </td>
-      <td>
-        <select onchange="guardarCampoMov('${m.id}','concepto',this.value,this)" style="font-size:12px;padding:3px 6px;border-radius:5px;border:1px solid var(--border);max-width:180px">
-          <option value="">— concepto —</option>
-          ${(m.imputar_a && CONCEPTOS[m.imputar_a] ? CONCEPTOS[m.imputar_a] : [...CONCEPTOS.Escuela,...CONCEPTOS.Sociedad,...(CONCEPTOS.Visas||[])]).map(c=>`<option value="${c}" ${c===m.concepto?'selected':''}>${c}</option>`).join('')}
-        </select>
-      </td>
-      <td style="text-align:center">
-        <select onchange="guardarCampoMov('${m.id}','factura_si',this.value==='true',this)" style="font-size:12px;padding:3px 6px;border-radius:5px;border:1px solid var(--border)">
-          <option value="false" ${!m.factura_si?'selected':''}>No</option>
-          <option value="true" ${m.factura_si?'selected':''}>Sí</option>
-        </select>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-function renderStats() {
-  const base = (typeof movimientosVista !== 'undefined' && movimientosVista) ? movimientosVista : movimientosCache;
-  const ingresos = base.filter(m => m.importe > 0 && m.imputar_a !== '???').reduce((s, m) => s + m.importe, 0);
-  const gastos = base.filter(m => m.importe < 0 && m.imputar_a !== '???').reduce((s, m) => s + m.importe, 0);
-  const pendientes = base.filter(m => m.imputar_a === '???').length;
-  const tit = document.getElementById('tabla-titulo');
-  if (tit && !/\(\d+ mov/.test(tit.textContent)) tit.textContent = tit.textContent.replace(/\s*\(\d+ mov.*\)$/, '') + ` (${base.length} mov.)`;
-  else if (tit) tit.textContent = tit.textContent.replace(/\s*\(\d+ mov.*\)$/, '') + ` (${base.length} mov.)`;
-  document.getElementById('stat-ingresos').textContent = formatEur(ingresos);
-  document.getElementById('stat-gastos').textContent = formatEur(gastos);
-  const res = ingresos + gastos;
-  const el = document.getElementById('stat-resultado');
-  el.textContent = formatEur(res);
-  el.className = 'stat-value ' + (res >= 0 ? 'positive' : 'negative');
-  document.getElementById('stat-pendientes').textContent = pendientes ? `${pendientes} movimientos` : '—';
-}
-
-// ─── EDITAR MODAL ─────────────────────────────────────────────
-function abrirEditar(id) {
-  editando = movimientosCache.find(m => m.id === id);
-  if (!editando) return;
-
-  document.getElementById('modal-concepto-titulo').textContent = editando.concepto_bancario;
-  document.getElementById('modal-fecha-titulo').textContent = `${editando.fecha} · ${formatEur(editando.importe)}`;
-  document.getElementById('edit-area').value = editando.imputar_a || '???';
-  document.getElementById('edit-factura').value = editando.factura_si ? 'true' : 'false';
-  document.getElementById('edit-nfactura').value = editando.nfactura || '';
-  document.getElementById('edit-obs').value = editando.observaciones || '';
-
-  updateConceptoSelect(editando.imputar_a, editando.concepto);
-  document.getElementById('edit-area').onchange = () => {
-    updateConceptoSelect(document.getElementById('edit-area').value, '');
-  };
-
-  const esVisa = editando.concepto_bancario?.includes('TARJETA CREDITO');
-  document.getElementById('visa-section').style.display = esVisa ? 'block' : 'none';
-  if (esVisa) cargarDetalleVisa(id);
-
-  document.getElementById('modal-editar').classList.add('open');
-}
-
-function updateConceptoSelect(area, selected) {
-  const sel = document.getElementById('edit-concepto');
-  const opts = area && CONCEPTOS[area] ? CONCEPTOS[area] : [...CONCEPTOS.Escuela, ...CONCEPTOS.Sociedad];
-  sel.innerHTML = '<option value="">— selecciona —</option>' + opts.map(c =>
-    `<option value="${c}" ${c === selected ? 'selected' : ''}>${c}</option>`
-  ).join('');
-}
-
-async function cargarDetalleVisa(movId) {
-  const data = await sbGet('movimientos_visa', `movimiento_id=eq.${movId}&order=fecha.asc`);
-  renderDetalleVisa(Array.isArray(data) ? data : [], editando.importe);
-}
-
-function renderDetalleVisa(rows, totalPadre) {
-  const tbody = document.getElementById('visa-detail-body');
-  tbody.innerHTML = rows.map((r, i) => `
-    <tr>
-      <td><input type="date" value="${r.fecha}" onchange="updateVisaRow(${i},'fecha',this.value)" style="font-size:12px;padding:4px"></td>
-      <td><input type="text" value="${r.concepto}" onchange="updateVisaRow(${i},'concepto',this.value)" style="width:160px;font-size:12px;padding:4px"></td>
-      <td><input type="number" step="0.01" value="${r.importe}" onchange="updateVisaRow(${i},'importe',parseFloat(this.value));checkVisaTotal(${totalPadre})" style="width:80px;text-align:right;font-size:12px;padding:4px"></td>
-      <td><select onchange="updateVisaRow(${i},'imputar_a',this.value)" style="font-size:12px;padding:4px">
-        ${['Escuela','Sociedad','???'].map(a => `<option ${r.imputar_a===a?'selected':''}>${a}</option>`).join('')}
-      </select></td>
-      <td><select onchange="updateVisaRow(${i},'concepto_basico',this.value)" style="font-size:12px;padding:4px">
-        <option value="">—</option>
-        ${[...CONCEPTOS.Escuela,...CONCEPTOS.Sociedad].map(c=>`<option ${r.concepto_basico===c?'selected':''}>${c}</option>`).join('')}
-      </select></td>
-      <td><button class="btn btn-secondary btn-sm" onclick="removeVisaRow(${i})">✕</button></td>
-    </tr>
-  `).join('');
-  window._visaRows = rows.map(r => ({...r}));
-  checkVisaTotal(totalPadre);
-}
-
-function addVisaRow() {
-  if (!window._visaRows) window._visaRows = [];
-  window._visaRows.push({ fecha: editando.fecha, concepto: '', importe: 0, imputar_a: 'Escuela', concepto_basico: '', movimiento_id: editando.id });
-  renderDetalleVisa(window._visaRows, editando.importe);
-}
-
-function removeVisaRow(i) {
-  window._visaRows.splice(i, 1);
-  renderDetalleVisa(window._visaRows, editando.importe);
-}
-
-function updateVisaRow(i, field, val) {
-  if (!window._visaRows) return;
-  window._visaRows[i][field] = val;
-}
-
-function checkVisaTotal(totalPadre) {
-  if (!window._visaRows) return;
-  const sum = window._visaRows.reduce((s, r) => s + (parseFloat(r.importe) || 0), 0);
-  const diff = Math.abs(sum - Math.abs(totalPadre));
-  const el = document.getElementById('visa-total-check');
-  if (diff < 0.02) {
-    el.innerHTML = `<span style="color:var(--sociedad)">✓ Total cuadra: ${formatEur(sum)}</span>`;
-  } else {
-    el.innerHTML = `<span style="color:var(--warn)">⚠ Total detalle: ${formatEur(sum)} · Cargo banco: ${formatEur(Math.abs(totalPadre))} · Diferencia: ${formatEur(diff)}</span>`;
-  }
-}
-
-async function guardarEdicion() {
-  if (!editando) return;
-  const body = {
-    imputar_a: document.getElementById('edit-area').value,
-    concepto: document.getElementById('edit-concepto').value,
-    factura_si: document.getElementById('edit-factura').value === 'true',
-    nfactura: document.getElementById('edit-nfactura').value || null,
-    observaciones: document.getElementById('edit-obs').value || null,
-  };
-  await sbPatch('movimientos', editando.id, body);
-
-  // Save visa detail
-  const esVisa = editando.concepto_bancario?.includes('TARJETA CREDITO');
-  if (esVisa && window._visaRows) {
-    // Delete existing and reinsert
-    await fetch(`${SUPABASE_URL}/rest/v1/movimientos_visa?movimiento_id=eq.${editando.id}`, {
-      method: 'DELETE',
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${sesionToken()}` }
-    });
-    if (window._visaRows.length > 0) {
-      await sbPost('movimientos_visa', window._visaRows.map(r => ({...r, movimiento_id: editando.id})));
-    }
-  }
-
-  cerrarModal('modal-editar');
-  toast('Guardado ✓');
-  await cargarMovimientos(MESES_NUM[mesActivo]);
-}
-
-function cerrarModal(id) {
-  document.getElementById(id).classList.remove('open');
-  editando = null;
-  window._visaRows = null;
-}
-
-// ─── IMPORT ───────────────────────────────────────────────────
-function handleDrop(e) {
-  e.preventDefault();
-  document.getElementById('upload-zone').classList.remove('drag');
-  handleFile(e.dataTransfer.files[0]);
-}
-
-// Convierte una fecha a 'YYYY-MM-DD' SIN pasar por UTC.
-// toISOString() restaba un día en horario de verano (CEST = UTC+2).
-function fechaLocalISO(d) {
-  if (!(d instanceof Date) || isNaN(d)) return null;
-  const p = n => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
-
-// Serie de Excel -> fecha (base 1899-12-30, en UTC para evitar desfases)
-function fechaDesdeSerie(n) {
-  const ms = Math.round((n - 25569) * 86400 * 1000);
-  const d = new Date(ms);
-  if (isNaN(d)) return null;
-  const p = x => String(x).padStart(2, '0');
-  return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}`;
-}
-
-function normalizaFecha(raw) {
-  if (raw instanceof Date)      return fechaLocalISO(raw);
-  if (typeof raw === 'number')  return fechaDesdeSerie(raw);
-  if (typeof raw === 'string')  return parseFechaES(raw.trim());
-  return null;
-}
-
-function handleFile(file) {
-  if (!file) return;
-  const diag = document.getElementById('import-diag');
-  if (diag) { diag.style.display = 'none'; diag.innerHTML = ''; }
-
-  const reader = new FileReader();
-
-  reader.onerror = () => avisoImport('error',
-    'No se ha podido leer el fichero. Puede estar abierto en Excel o dañado.');
-
-  reader.onload = e => {
-    let wb, ws, rows;
-
-    // 1) Abrir el libro
-    try {
-      wb = XLSX.read(e.target.result, { type: 'binary', cellDates: true });
-    } catch (err) {
-      avisoImport('error',
-        'El fichero no se ha podido abrir como Excel.<br>' +
-        'Si lo descargaste del banco, comprueba que no sea un .xls antiguo o un HTML renombrado. ' +
-        'Prueba a abrirlo en Excel y guardarlo como <strong>.xlsx</strong>.' +
-        '<br><small style="color:var(--muted)">Detalle técnico: ' + esc(err.message) + '</small>');
-      return;
-    }
-
-    if (!wb.SheetNames.length) {
-      avisoImport('error', 'El fichero no contiene ninguna hoja.');
-      return;
-    }
-
-    ws = wb.Sheets[wb.SheetNames[0]];
-    rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
-
-    if (!rows.length) {
-      avisoImport('error', `La hoja "${esc(wb.SheetNames[0])}" está vacía.`);
-      return;
-    }
-
-    // 2) Localizar la fila de cabecera: 'F. Operativa' en CUALQUIER columna
-    let headerIdx = -1;
-    for (let i = 0; i < rows.length && headerIdx < 0; i++) {
-      const r = rows[i];
-      if (!r) continue;
-      for (const celda of r) {
-        const t = String(celda || '').trim().toLowerCase();
-        if (t.includes('f. operativa') || t.includes('f.operativa') ||
-            t.includes('fecha operativa') || t === 'f. valor') {
-          headerIdx = i; break;
-        }
-      }
-    }
-
-    const cabeceraEncontrada = headerIdx >= 0;
-    if (!cabeceraEncontrada) headerIdx = 8; // formato BBK clásico
-
-    // 2b) Mapear las columnas por su TÍTULO, no por posición fija.
-    //     El extracto no siempre trae el importe en la columna D.
-    const cab = (rows[headerIdx] || []).map(c => String(c || '').trim().toLowerCase());
-    const buscaCol = (...claves) => {
-      for (let i = 0; i < cab.length; i++)
-        if (claves.some(k => cab[i].includes(k))) return i;
-      return -1;
-    };
-
-    let colFecha    = buscaCol('f. operativa', 'f.operativa', 'fecha operativa');
-    let colConcepto = buscaCol('concepto');
-    let colImporte  = buscaCol('importe');
-    // Columnas opcionales que el propio club añade al revisar el extracto
-    const colArea      = buscaCol('imputar a');
-    const colConceptCC = cab.lastIndexOf('concepto:');
-
-    if (colFecha    < 0) colFecha    = 0;
-    if (colConcepto < 0) colConcepto = 1;
-    if (colImporte  < 0) colImporte  = 3;   // formato BBK clásico
-    // 'concepto' coincide con 'concepto:' — si son la misma, usar la primera
-    if (colConcepto === colConceptCC) colConcepto = buscaCol('concepto');
-
-    // 3) Extraer movimientos, contando los descartes y por qué
-    const movs = [];
-    const descartes = { sinFecha: 0, sinImporte: 0, sinConcepto: 0 };
-
-    for (let i = headerIdx + 1; i < rows.length; i++) {
-      const r = rows[i];
-      if (!r || r.every(c => c === null || c === '')) continue;
-
-      const fecha = normalizaFecha(r[colFecha]);
-      if (!fecha) { descartes.sinFecha++; continue; }
-
-      const importeRaw = r[colImporte];
-      if (importeRaw === null || importeRaw === undefined || importeRaw === '') {
-        descartes.sinImporte++; continue;
-      }
-      // Admite "1.234,56" además de "1234.56"
-      const importe = typeof importeRaw === 'number'
-        ? importeRaw
-        : parseFloat(String(importeRaw).replace(/\./g, '').replace(',', '.'));
-      if (isNaN(importe)) { descartes.sinImporte++; continue; }
-
-      const conceptoBancario = String(r[colConcepto] || '').trim();
-      if (!conceptoBancario) { descartes.sinConcepto++; continue; }
-
-      // Si el fichero ya trae área/concepto rellenados a mano, se respetan.
-      const cat = categorizar(conceptoBancario);
-      const areaManual = colArea      >= 0 ? String(r[colArea]      || '').trim() : '';
-      const concManual = colConceptCC >= 0 ? String(r[colConceptCC] || '').trim() : '';
-
-      movs.push({
-        fecha,
-        concepto_bancario: conceptoBancario,
-        importe,
-        imputar_a: areaManual || cat.area,
-        concepto: concManual || cat.concepto,
-        mes: parseInt(fecha.split('-')[1]),
-        temporada: '25-26',
-        factura_si: false,
-        es_visa: conceptoBancario.includes('TARJETA CREDITO'),
-      });
-    }
-
-    // 4) Si no sale nada, explicar por qué en vez de quedarse mudo
-    if (!movs.length) {
-      const muestra = rows.slice(0, 14).map((r, i) =>
-        `<tr><td style="color:var(--muted);padding-right:10px">${i}</td><td>` +
-        (r || []).slice(0, 5).map(c => esc(String(c ?? '')).slice(0, 30)).join(
-          '</td><td style="padding-left:10px">') + '</td></tr>'
-      ).join('');
-
-      avisoImport('error',
-        '<strong>No se ha detectado ningún movimiento en el fichero.</strong><br>' +
-        (cabeceraEncontrada
-          ? `Cabecera localizada en la fila ${headerIdx}, pero ninguna fila posterior tiene fecha, importe y concepto en las columnas esperadas (A, B y D).`
-          : 'No se ha encontrado la cabecera "F. Operativa". Es posible que el banco haya cambiado el formato del extracto.') +
-        `<br><small>Filas descartadas — sin fecha válida: ${descartes.sinFecha} · ` +
-        `sin importe: ${descartes.sinImporte} · sin concepto: ${descartes.sinConcepto}</small>` +
-        `<br><small>Columnas detectadas — fecha: ${colFecha} · concepto: ${colConcepto} · importe: ${colImporte}</small>` +
-        '<div style="margin-top:12px"><strong style="font-size:12px">Primeras filas del fichero:</strong>' +
-        `<table style="font-size:11px;margin-top:6px;border-collapse:collapse">${muestra}</table></div>`);
-      return;
-    }
-
-    pendingImport = movs;
-    renderPreview(movs, rows);
-  };
-
-  reader.readAsBinaryString(file);
-}
-
-function esc(t) {
-  return String(t).replace(/[&<>"]/g, c =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-}
-
-function avisoImport(tipo, html) {
-  const el = document.getElementById('import-diag');
-  if (!el) { alert(html.replace(/<[^>]+>/g, ' ')); return; }
-  el.style.display = 'block';
-  el.style.borderColor = tipo === 'error' ? '#f7c1c1' : '#fac775';
-  el.style.background  = tipo === 'error' ? '#fcebeb' : '#faeeda';
-  el.style.color       = tipo === 'error' ? '#791f1f' : '#633806';
-  el.innerHTML = html;
-  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  document.getElementById('file-input').value = '';
-}
-
-function parseFechaES(s) {
-  const m = s.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-  return m ? `${m[3]}-${m[2]}-${m[1]}` : null;
-}
-
-function renderPreview(movs, rows) {
-  document.getElementById('preview-area').style.display = 'block';
-  document.getElementById('preview-count').textContent = `${movs.length} movimientos detectados · `;
-  // Extract period from header
-  const periodoRow = rows.find(r => r && String(r[0]).includes('Desde'));
-  document.getElementById('preview-period').textContent = periodoRow ? String(periodoRow[0]) : '';
-
-  const tbody = document.getElementById('preview-body');
-  tbody.innerHTML = movs.map(m => {
-    const badgeClass = m.imputar_a === 'Escuela' ? 'badge-escuela' : m.imputar_a === 'Sociedad' ? 'badge-sociedad' : 'badge-warn';
-    const impClass = m.importe >= 0 ? 'importe-pos' : 'importe-neg';
-    return `<tr>
-      <td style="white-space:nowrap">${m.fecha}</td>
-      <td style="max-width:300px;font-size:12px">${m.concepto_bancario}</td>
-      <td style="text-align:right" class="${impClass}">${formatEur(m.importe)}</td>
-      <td><span class="badge ${badgeClass}">${m.imputar_a}</span></td>
-      <td style="font-size:12px">${m.concepto || '—'}</td>
-    </tr>`;
-  }).join('');
-}
-
-function cancelarImport() {
-  pendingImport = [];
-  document.getElementById('preview-area').style.display = 'none';
-  document.getElementById('file-input').value = '';
-}
-
-async function guardarMovimientos() {
-  if (!pendingImport.length) return;
-  const btn = document.getElementById('btn-guardar');
-  btn.disabled = true;
-  btn.innerHTML = '<div class="spinner"></div> Comprobando duplicados...';
-
-  // Get existing movements: fetch by fecha+importe+concepto to detect dupes
-  const fechas = [...new Set(pendingImport.map(m => m.fecha))];
-  const minFecha = fechas.sort()[0];
-  const maxFecha = fechas.sort().slice(-1)[0];
-  const existing = await sbGet('movimientos', `fecha=gte.${minFecha}&fecha=lte.${maxFecha}&temporada=eq.25-26&select=fecha,concepto_bancario,importe`);
-  const existingSet = new Set(
-    (Array.isArray(existing) ? existing : []).map(m => `${m.fecha}|${m.concepto_bancario}|${m.importe}`)
-  );
-
-  const nuevos = pendingImport.filter(m => !existingSet.has(`${m.fecha}|${m.concepto_bancario}|${m.importe}`));
-  const duplicados = pendingImport.length - nuevos.length;
-
-  if (!nuevos.length) {
-    btn.disabled = false;
-    btn.textContent = 'Guardar en base de datos';
-    toast('Todos los movimientos ya existen, nada que guardar.');
-    return;
-  }
-
-  btn.innerHTML = '<div class="spinner"></div> Guardando...';
-  await sbPost('movimientos', nuevos);
-
-  const primerMes = nuevos[0]?.mes;
-  cancelarImport();
-  btn.disabled = false;
-  btn.textContent = 'Guardar en base de datos';
-  toast(`${nuevos.length} guardados${duplicados ? `, ${duplicados} duplicados omitidos` : ''} ✓`);
-
-  if (primerMes) {
-    const idx = MESES_NUM.indexOf(primerMes);
-    showPage('movimientos');
-    if (idx >= 0) selectMes(idx);
-  }
-}
-
-// ─── JSON IMPORT ──────────────────────────────────────────────
-async function handleJsonFile(file) {
-  if (!file) return;
-  const text = await file.text();
-  const records = JSON.parse(text);
-  pendingImport = records;
-  renderPreview(records, []);
-  document.getElementById('preview-count').textContent = `${records.length} movimientos · `;
-  document.getElementById('preview-period').textContent = 'Desde JSON pre-categorizado';
-  document.getElementById('preview-area').style.display = 'block';
-}
-
-// ─── INLINE SAVE ──────────────────────────────────────────────
-async function guardarCampoMov(id, campo, valor, el) {
-  const body = { [campo]: valor };
-  // If changing area, reset concepto
-  if (campo === 'imputar_a') {
-    body.concepto = '';
-    // Update concepto select options in same row
-    const row = el.closest('tr');
-    const conceptoSel = row.querySelectorAll('select')[1];
-    const opts = CONCEPTOS[valor] || [...CONCEPTOS.Escuela, ...CONCEPTOS.Sociedad];
-    conceptoSel.innerHTML = '<option value="">— concepto —</option>' + opts.map(c => `<option value="${c}">${c}</option>`).join('');
-    el.style.background = valor==='Escuela'?'#eff6ff':valor==='Sociedad'?'#f0fdf4':valor==='Visas'?'#f5f3ff':'#fffbeb';
-    el.style.color = valor==='Escuela'?'var(--escuela)':valor==='Sociedad'?'var(--sociedad)':valor==='Visas'?'#7c3aed':'var(--warn)';
-  }
-  await sbPatch('movimientos', id, body);
-  // Update cache
-  const m = movimientosCache.find(x => x.id === id);
-  if (m) { m[campo] = valor; if (campo === 'imputar_a') m.concepto = ''; }
-  renderStats();
-}
-
-async function guardarCampoVisa(id, campo, valor, el) {
-  const body = { [campo]: valor };
-  if (campo === 'imputar_a') {
-    body.concepto_basico = '';
-    const row = el.closest('tr');
-    const conceptoSel = row.querySelectorAll('select')[1];
-    const opts = CONCEPTOS[valor] || [...CONCEPTOS.Escuela, ...CONCEPTOS.Sociedad];
-    conceptoSel.innerHTML = '<option value="">— concepto —</option>' + opts.map(c => `<option value="${c}">${c}</option>`).join('');
-  }
-  await fetch(`${SUPABASE_URL}/rest/v1/movimientos_visa?id=eq.${id}`, {
-    method: 'PATCH',
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${sesionToken()}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  const m = tarjetasCache.find(x => x.id === id);
-  if (m) { m[campo] = valor; if (campo === 'imputar_a') m.concepto_basico = ''; }
-}
-
-// ─── IMPORT VISAS ────────────────────────────────────────────
-let pendingVisas = []; // [{titular, tipo, movimientos:[]}]
-
-function handleDropVisa(e) {
-  e.preventDefault();
-  document.getElementById('upload-zone-visa').classList.remove('drag');
-  handleFilesVisa(e.dataTransfer.files);
-}
-
-function handleFilesVisa(files) {
-  pendingVisas = [];
-  document.getElementById('preview-visa-area').style.display = 'none';
-  let processed = 0;
-  Array.from(files).forEach(file => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      const wb = XLSX.read(e.target.result, { type: 'binary' });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
-      const parsed = parseTarjeta(rows, file.name);
-      window._lastParsed = {filename: file.name, rows: rows.slice(0,12), parsed};
-      if (parsed) pendingVisas.push(parsed);
-      processed++;
-      if (processed === files.length) renderPreviewVisas();
-    };
-    reader.readAsBinaryString(file);
-  });
-}
-
-function parseTarjeta(rows, filename) {
-  // Detect format: viat has 'VIA T' in row 12, visa has titular in row 6
-  // Detect viat by filename (6039 prefix) or by 'MOVIMIENTOS DE CREDITO' structure
-  const isViat = filename.toLowerCase().includes('6039') || rows.some(r => r && r.some(c => c && String(c).includes('VIA T')));
-  const tipo = isViat ? 'Viat' : 'Visa';
-
-  // Get titular
-  let titular = 'Desconocido';
-  if (!isViat) {
-    // Visa: get first apellido from row 6
-    const titRow = rows[6];
-    if (titRow && titRow[1]) {
-      titular = String(titRow[1]).split(',')[0].split(' ')[0];
-      titular = titular.charAt(0) + titular.slice(1).toLowerCase();
-    }
-  } else {
-    // Viat: use card number from row 5 (e.g. "6039________7015" → "Viat-7015")
-    // Read card number from row 5 col 1 (cell B6 in Excel: "6039      7016")
-    const cardCell = rows[5] && rows[5][1] ? String(rows[5][1]).trim() : '';
-    const cardDigits = cardCell.replace(/\s+/g, '').slice(-4);
-    titular = cardDigits ? 'Viat-' + cardDigits : 'Viat-' + filename.replace('.xls','').slice(-4);
-  }
-
-  // Find header row
-  let headerIdx = rows.findIndex(r => r && r[0] === 'FECHA' && r[1] === 'CONCEPTO');
-  if (headerIdx < 0) return null;
-
-  // Parse movements
-  const movs = [];
-  const currentYear = new Date().getFullYear(); // 2026
-  for (let i = headerIdx + 1; i < rows.length; i++) {
-    const r = rows[i];
-    if (!r || !r[0] || !r[1]) continue;
-    const fechaRaw = String(r[0]).trim();
-    if (!fechaRaw.match(/^\d{2}\/\d{2}$/)) continue;
-
-    // Parse DD/MM → infer year: month >= 11 → 2025, else 2026
-    const [dd, mm] = fechaRaw.split('/').map(Number);
-    const year = mm >= 11 ? currentYear - 1 : currentYear;
-    const fecha = `${year}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}`;
-
-    const concepto = String(r[1] || '').trim();
-    const localidad = String(r[2] || '').trim();
-    const importeRaw = String(r[4] || r[3] || '').replace('.','').replace(',','.').trim();
-    const importe = parseFloat(importeRaw);
-    if (isNaN(importe) || importe <= 0) continue;
-
-    // Auto-categorize
-    let conceptoBasico = '';
-    let area = 'Escuela';
-    if (isViat || /BIDEGI|AP\d|AUTOPISTA|AUTOVIA|PEAJE|SARASA|INTERBIAK|VASCO ARAGONESA/i.test(concepto)) {
-      conceptoBasico = 'Autopistas';
-    } else if (/EASY GAS|GASOLINERA|PETROL|ALCAMPO.*GAS|E\.S\.|ESTACION SERVICIO|ESKORTZA/i.test(concepto)) {
-      conceptoBasico = 'Gasolina';
-    } else if (/ITV/i.test(concepto)) {
-      conceptoBasico = 'Reparaciones y ITV';
-    } else if (/DGT|SANCION|MULTA/i.test(concepto)) {
-      conceptoBasico = 'Multas y embargos';
-    } else if (/TULOTERO|LOTERIA|ONCE/i.test(concepto)) {
-      conceptoBasico = 'Lotería navidad';
-    } else if (/MAKRO|MERCADONA|CARREFOUR|ALCAMPO|SUPERMERCADO/i.test(concepto)) {
-      conceptoBasico = 'Varios Escuela';
-    } else if (/IBARGOYEN|TALLER|MECANICO/i.test(concepto)) {
-      conceptoBasico = 'Mantenimiento coches';
-    }
-
-    movs.push({ fecha, concepto, localidad, importe: -importe, imputar_a: conceptoBasico ? area : '???', concepto_basico: conceptoBasico, titular, tipo });
-  }
-
-  return { titular, tipo, movimientos: movs };
-}
-
-function renderPreviewVisas() {
-  const container = document.getElementById('preview-visa-area');
-  if (!pendingVisas.length) { container.style.display = 'none'; return; }
-
-  const totalMovs = pendingVisas.reduce((s, v) => s + v.movimientos.length, 0);
-  container.style.display = 'block';
-  container.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div>
-        <strong>${pendingVisas.length} tarjetas · ${totalMovs} movimientos</strong>
-        <span style="color:var(--muted);font-size:12px;margin-left:8px">${pendingVisas.map(v => v.titular).join(', ')}</span>
-      </div>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-secondary btn-sm" onclick="cancelarImportVisa()">Cancelar</button>
-        <button class="btn btn-primary btn-sm" onclick="guardarVisas()">Guardar tarjetas</button>
-      </div>
-    </div>
-    ${pendingVisas.map(v => `
-      <div style="margin-bottom:16px">
-        <div style="font-weight:600;font-size:13px;margin-bottom:8px">
-          <span class="badge ${v.tipo === 'Viat' ? 'badge-escuela' : 'badge-sociedad'}">${v.tipo}</span>
-          <span style="margin-left:8px">${v.titular}</span>
-          <span style="color:var(--muted);font-size:12px;margin-left:6px">${v.movimientos.length} movimientos</span>
-        </div>
-        <div class="table-wrap" style="max-height:200px;overflow-y:auto">
-          <table>
-            <thead><tr><th>Fecha</th><th>Concepto</th><th>Localidad</th><th style="text-align:right">Importe</th><th>Categoría</th></tr></thead>
-            <tbody>
-              ${v.movimientos.map(m => `<tr>
-                <td style="white-space:nowrap">${m.fecha}</td>
-                <td style="font-size:12px">${m.concepto}</td>
-                <td style="font-size:12px;color:var(--muted)">${m.localidad}</td>
-                <td style="text-align:right" class="importe-neg">${formatEur(m.importe)}</td>
-                <td style="font-size:12px">${m.concepto_basico || '<span style="color:var(--warn)">???</span>'}</td>
-              </tr>`).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `).join('')}
-  `;
-}
-
-async function guardarVisas() {
-  if (!pendingVisas.length) return;
-  const totalMovs = pendingVisas.reduce((s, v) => s + v.movimientos.length, 0);
-
-  // Get existing to avoid dupes
-  const existing = await sbGet('movimientos_visa', 'select=fecha,concepto,importe,titular');
-  const existingSet = new Set(
-    (Array.isArray(existing) ? existing : []).map(m => `${m.fecha}|${m.concepto}|${m.importe}|${m.titular}`)
-  );
-  // Key includes titular so same autopista charge on same day for different cars is NOT a dupe
-
-  // Get all bank movements that are tarjeta credito for auto-linking
-  const bancoCargos = await sbGet('movimientos', 
-    `temporada=eq.25-26&concepto_bancario=like.*TARJETA CREDITO*&select=id,fecha,concepto_bancario,importe,mes`);
-  const cargosArr = Array.isArray(bancoCargos) ? bancoCargos : [];
-
-  const nuevos = [];
-  const vinculos = []; // {movimiento_id, total} for logging
-  let noVinculados = 0;
-
-  for (const v of pendingVisas) {
-    if (!v.movimientos.length) continue;
-
-    // Group movements by month and try to link each month separately
-    const porMes = {};
-    v.movimientos.forEach(m => {
-      const mes = parseInt(m.fecha.split('-')[1]);
-      if (!porMes[mes]) porMes[mes] = [];
-      porMes[mes].push(m);
-    });
-
-    const movimientoIdPorMes = {};
-
-    for (const [mes, movsDelMes] of Object.entries(porMes)) {
-      const totalMes = Math.round(movsDelMes.reduce((s, m) => s + Math.abs(m.importe), 0) * 100) / 100;
-      if (totalMes === 0) continue;
-
-      const candidatos = cargosArr.filter(c => {
-        if (c.mes !== parseInt(mes)) return false;
-        const importeAbs = Math.round(Math.abs(c.importe) * 100) / 100;
-        const totalMatch = Math.abs(importeAbs - totalMes) < 0.02;
-        if (!totalMatch) return false;
-        if (v.tipo === 'Viat') {
-          return c.concepto_bancario.includes('CLUB CICLISTA IRUNES');
-        } else {
-          const apellido = v.titular.toUpperCase();
-          return c.concepto_bancario.toUpperCase().includes(apellido);
-        }
-      });
-
-      if (candidatos.length === 1) {
-        movimientoIdPorMes[mes] = candidatos[0].id;
-        vinculos.push({ titular: v.titular, mes, total: totalMes, linked: true });
-      } else {
-        noVinculados++;
-        vinculos.push({ titular: v.titular, mes, total: totalMes, linked: false, 
-          reason: candidatos.length === 0 ? 'Sin coincidencia' : 'Múltiples coincidencias' });
-      }
-    }
-
-    v.movimientos.forEach(m => {
-      const key = `${m.fecha}|${m.concepto}|${m.importe}|${m.titular}`;
-      const mes = parseInt(m.fecha.split('-')[1]);
-      if (!existingSet.has(key)) {
-        nuevos.push({ 
-          ...m, 
-          movimiento_id: movimientoIdPorMes[mes] || null,
-          temporada: '25-26', 
-          mes 
-        });
-      }
-    });
-  }
-
-  const dupes = totalMovs - nuevos.length;
-  if (!nuevos.length) { toast('Todo ya existe, nada que guardar.'); return; }
-
-  const toSave = nuevos.map(({tipo, localidad, ...m}) => m);
-  await sbPost('movimientos_visa', toSave);
-
-  const vinculados = vinculos.filter(v => v.linked).length;
-  let msg = `${nuevos.length} movimientos guardados`;
-  if (vinculados) msg += ` · ${vinculados} tarjetas vinculadas al banco`;
-  if (noVinculados) msg += ` · ${noVinculados} sin vincular (revisar)`;
-  if (dupes) msg += ` · ${dupes} duplicados omitidos`;
-
-  cancelarImportVisa();
-  toast(msg + ' ✓');
-}
-
-function cancelarImportVisa() {
-  pendingVisas = [];
-  document.getElementById('preview-visa-area').style.display = 'none';
-  document.getElementById('file-input-visa').value = '';
-}
-
-// ─── RESUMEN ──────────────────────────────────────────────────
-async function cargarResumen() {
-  const [data, dataVisa] = await Promise.all([
-    sbGet('movimientos', 'temporada=eq.25-26&order=fecha.asc'),
-    sbGet('movimientos_visa', 'temporada=eq.25-26&contabilizado=eq.true&select=importe,imputar_a,concepto_basico')
+/* ================= CAJA ================= */
+let notasEf=[], cajaMovs=[], ingresos=[];
+
+async function cargarCaja(){
+  [notasEf, cajaMovs, ingresos] = await Promise.all([
+    api('notas_gasto?select=total,created_at&forma_pago=eq.efectivo'),
+    api('caja_movimientos?select=*&order=fecha.desc,created_at.desc'),
+    api('movimientos?select=fecha,concepto_bancario,importe&concepto=eq.Ingreso%20efectivo%20caja&order=fecha.desc')
   ]);
-  const movs = Array.isArray(data) ? data : [];
-  const visa = Array.isArray(dataVisa) ? dataVisa : [];
-
-  // Merge visa into movs-like structure using concepto_basico as concepto
-  const visaAsMovs = visa.map(v => ({
-    imputar_a: v.imputar_a,
-    concepto: v.concepto_basico || 'Sin concepto',
-    importe: v.importe
-  }));
-
-  // Exclude Visas area from movimientos (those are covered by movimientos_visa detail)
-  const movsNoVisas = movs.filter(m => m.imputar_a !== 'Visas' && m.imputar_a !== '???');
-  renderResumenArea([...movsNoVisas, ...visaAsMovs], 'Escuela', 'escuela');
-  renderResumenArea([...movsNoVisas, ...visaAsMovs], 'Sociedad', 'sociedad');
+  pintarCaja();
 }
 
-function renderResumenArea(movs, area, key) {
-  const filtrados = movs.filter(m => m.imputar_a === area && m.imputar_a !== '???');
-  const porConceptoIng = {};
-  const porConceptoGas = {};
-  filtrados.forEach(m => {
-    const c = m.concepto || 'Sin concepto';
-    if (m.importe >= 0) {
-      porConceptoIng[c] = (porConceptoIng[c] || 0) + m.importe;
-    } else {
-      porConceptoGas[c] = (porConceptoGas[c] || 0) + m.importe;
+function pintarCaja(){
+  const d   = $('k-desde').value || '1900-01-01';
+  const fc  = $('k-cat').value;
+  const fs  = $('k-soc').value;
+
+  const entradas = notasEf.filter(n=>n.created_at.slice(0,10) >= d)
+                          .reduce((a,n)=>a+ +n.total, 0);
+  const movs  = cajaMovs.filter(m=>m.fecha >= d);
+  const ings  = ingresos.filter(i=>i.fecha >= d);
+  const cajaMov = movs.reduce((a,m)=>a+ +m.importe, 0);
+  const banco   = ings.reduce((a,i)=>a+ +i.importe, 0);
+  const total   = cajaMov;   // el libro de caja ya incluye ingresos y traspasos
+
+  $('c-entradas').textContent = eur(movs.filter(m=>m.tipo==='ingreso').reduce((a,m)=>a+ +m.importe,0));
+  $('c-pagos').textContent    = eur(movs.filter(m=>m.tipo==='pago').reduce((a,m)=>a+ +m.importe,0));
+  $('c-banco').textContent    = eur(-movs.filter(m=>m.tipo==='traspaso_banco').reduce((a,m)=>a+ +m.importe,0));
+  $('c-saldo').textContent    = eur(total);
+  $('c-saldo').className      = 'val ' + (total<0?'neg':'');
+  $('aviso-ancla').classList.toggle('hide', movs.some(m=>m.tipo==='saldo_inicial'));
+
+  /* Desplegables de categoría y socio */
+  const cats = [...new Set(cajaMovs.map(m=>m.categoria).filter(Boolean))].sort();
+  const sel = $('k-cat');
+  if(sel.options.length <= 1)
+    cats.forEach(c=>sel.add(new Option(c,c)));
+  const dl = $('l-cat');
+  if(dl && !dl.children.length)
+    cats.forEach(c=>dl.appendChild(Object.assign(document.createElement('option'),{value:c})));
+  const socs = [...new Set(cajaMovs.map(m=>m.socio_num).filter(Boolean))].sort((a,b)=>a-b);
+  const ss = $('k-soc');
+  if(ss.options.length <= 2)
+    socs.forEach(n=>ss.add(new Option('nº'+n, n)));
+
+  let vis = movs;
+  if(fc) vis = vis.filter(m=>m.categoria===fc);
+  if(fs==='sin') vis = vis.filter(m=>!m.socio_num && m.tipo==='ingreso');
+  else if(fs)    vis = vis.filter(m=>m.socio_num===fs);
+
+  const subtotal = vis.reduce((a,m)=>a+ +m.importe,0);
+
+  $('tb-caja').innerHTML = (vis.length ? vis.map(m=>`
+    <tr><td>${m.fecha}</td>
+      <td><span class="tag ${m.tipo==='ingreso'?'ok':m.tipo==='traspaso_banco'?'gris':m.tipo==='saldo_inicial'?'wait':'no'}">${
+        {ingreso:'Ingreso',pago:'Pago',traspaso_banco:'Al banco',saldo_inicial:'Saldo inicial',arqueo:'Ajuste'}[m.tipo]||m.tipo}</span></td>
+      <td class="mini">${m.categoria||''}</td>
+      <td>${m.concepto}</td>
+      <td>${m.socio_num ? 'nº'+m.socio_num
+            : (m.tipo==='ingreso' ? `<button class="act ghost mini" onclick="asignarSocio('${m.id}')">Asignar</button>` : '')}</td>
+      <td class="num ${m.importe<0?'neg':'pos'}">${eur(+m.importe)}</td>
+      <td><button class="act ghost mini" onclick="borrarCaja('${m.id}')">Borrar</button></td>
+    </tr>`).join('')
+    : '<tr><td colspan="7" class="mini">Sin movimientos con estos filtros.</td></tr>')
+    + `<tr style="background:#f3f1ea;font-weight:700"><td colspan="5">${vis.length} movimientos</td>
+       <td class="num">${eur(subtotal)}</td><td></td></tr>`;
+
+  $('tb-ing').innerHTML = ings.length ? ings.map(i=>`
+    <tr><td>${i.fecha}</td><td>${i.concepto_bancario}</td>
+      <td class="num pos">${eur(+i.importe)}</td></tr>`).join('')
+    : '<tr><td colspan="3" class="mini">Sin ingresos en este periodo.</td></tr>';
+}
+
+async function asignarSocio(id){
+  const n = prompt('Número de socio para este movimiento:');
+  if(!n) return;
+  try{
+    await api('caja_movimientos?id=eq.'+id, {method:'PATCH',
+      body:JSON.stringify({socio_num: n.trim()})});
+    await cargarCaja();
+  }catch(e){ alert('No se ha podido asignar:\n\n'+e.message); }
+}
+
+async function guardarCaja(){
+  const tipo = $('f-tipo').value;
+  const bruto = parseFloat(($('f-importe').value||'').replace(',','.'));
+  if(!$('f-concepto').value.trim() || isNaN(bruto)){ alert('Falta concepto o importe.'); return; }
+  const f = $('f-fecha').value;
+  if(f > new Date().toISOString().slice(0,10) &&
+     !confirm('La fecha '+f+' es futura. ¿Guardar igualmente?')) return;
+  const importe = (tipo==='pago' || tipo==='traspaso_banco') ? -Math.abs(bruto) : bruto;
+  try{
+    await api('caja_movimientos', {method:'POST', body:JSON.stringify({
+      fecha:f, tipo, concepto:$('f-concepto').value.trim(), importe,
+      categoria: $('f-cat').value.trim() || null,
+      socio_num: $('f-soc').value.trim() || null })});
+    $('f-concepto').value=''; $('f-importe').value=''; $('f-soc').value='';
+    await cargarCaja();
+  }catch(e){ alert('No se ha podido guardar:\n\n'+e.message); }
+}
+async function borrarCaja(id){
+  if(!confirm('¿Borrar este movimiento de caja?')) return;
+  await api('caja_movimientos?id=eq.'+id, {method:'DELETE'});
+  cargarCaja();
+}
+
+/* ================= TPV ================= */
+let lotes=[], notas=[], estados={};
+
+async function cargarTPV(){
+  const [L,N,E] = await Promise.all([
+    api('tpv_lotes?select=*&order=fecha.desc'),
+    api('notas_gasto?select=id,socio_num,total,forma_pago,created_at,lote_ref,mesa&order=created_at.desc'),
+    api('tpv_lotes_estado?select=*')
+  ]);
+  lotes=L; notas=N; estados={}; E.forEach(e=>estados[e.ref]=e); // e.ref guarda ya el lote_id
+  pintarTPV();
+}
+
+let orden = {col:'fecha', dir:-1};
+function ordenar(col){
+  orden.dir = (orden.col===col) ? -orden.dir : -1;
+  orden.col = col;
+  pintarTPV();
+}
+
+/* Prioridad al ordenar por estado: primero lo que requiere acción. */
+const RANK = {propuesta:0, descuadre:1, sin_exacta:2, devolucion:3, sin_nota:4, conciliado:5};
+
+function pintarTPV(){
+  const desde = $('f-desde').value || '1900-01-01';
+  const vis = lotes.filter(l=>l.fecha >= desde);
+
+  const huer = notas.filter(n=>n.forma_pago==='tarjeta' && !n.lote_ref && n.created_at.slice(0,10)>=desde)
+                    .sort((a,b)=>b.created_at.localeCompare(a.created_at));
+
+  /* Estado de cada lote, calculado una sola vez */
+  const filas = vis.map(l=>{
+    const asign = notas.filter(n=>n.lote_ref===l.lote_id);
+    if(asign.length){
+      const suma = asign.reduce((a,n)=>a+ +n.total,0);
+      const ok = c(suma)===c(l.bruto);
+      return {l, tipo: ok?'conciliado':'descuadre', asign, suma};
     }
-  });
-  const ingresos = Object.entries(porConceptoIng).filter(([,v]) => v > 0).sort((a,b) => b[1]-a[1]);
-  const gastos = Object.entries(porConceptoGas).filter(([,v]) => v < 0).sort((a,b) => a[1]-b[1]);
-  const total = filtrados.reduce((s,m) => s + m.importe, 0);
-
-  document.getElementById(`resumen-${key}-ingresos`).innerHTML =
-    '<div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px">INGRESOS</div>' +
-    ingresos.map(([c,v]) => `<div class="concepto-row"><span class="label">${c}</span><span class="valor importe-pos">${formatEur(v)}</span></div>`).join('');
-
-  document.getElementById(`resumen-${key}-gastos`).innerHTML =
-    '<div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px">GASTOS</div>' +
-    gastos.map(([c,v]) => `<div class="concepto-row"><span class="label">${c}</span><span class="valor importe-neg">${formatEur(v)}</span></div>`).join('');
-
-  const elTotal = document.getElementById(`resumen-${key}-total`);
-  elTotal.textContent = formatEur(total);
-  elTotal.className = 'valor ' + (total >= 0 ? 'importe-pos' : 'importe-neg');
-}
-
-// ─── EXPORT EXCEL ─────────────────────────────────────────────
-function exportarExcel() {
-  if (!movimientosCache.length) return;
-  const rows = [['Fecha','Concepto Bancario','Importe','Imputar a:','concepto:','Observaciones','Factura SI/NO','Nº Factura']];
-  movimientosCache.forEach(m => {
-    rows.push([m.fecha, m.concepto_bancario, m.importe, m.imputar_a, m.concepto, m.observaciones, m.factura_si ? 'SI' : 'NO', m.nfactura || '']);
-  });
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, `${MESES[mesActivo]} 2026`);
-  XLSX.writeFile(wb, `Movimientos_${MESES[mesActivo]}_CCI.xlsx`);
-}
-
-function exportarResumen() { toast('Próximamente'); }
-
-// ─── TARJETAS ─────────────────────────────────────────────────
-let tarjetasCache = [];
-
-async function cargarTarjetas() {
-  const mes = document.getElementById('filtro-tarjeta-mes').value;
-  const titular = document.getElementById('filtro-tarjeta-titular').value;
-
-  let params = 'temporada=eq.25-26&order=fecha.desc';
-  if (mes) params += `&mes=eq.${mes}`;
-  if (titular) params += `&titular=eq.${encodeURIComponent(titular)}`;
-
-  const data = await sbGet('movimientos_visa', params);
-  tarjetasCache = Array.isArray(data) ? data : [];
-
-  // Populate titular filter
-  const titulares = [...new Set(tarjetasCache.map(m => m.titular).filter(Boolean))].sort();
-  const selTitular = document.getElementById('filtro-tarjeta-titular');
-  const currentVal = selTitular.value;
-  selTitular.innerHTML = '<option value="">Todos los titulares</option>' + 
-    titulares.map(t => `<option value="${t}" ${t === currentVal ? 'selected' : ''}>${t}</option>`).join('');
-
-  renderTarjetas();
-}
-
-function renderTarjetas() {
-  const tbody = document.getElementById('tarjetas-body');
-  
-  if (!tarjetasCache.length) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">💳</div><p>No hay movimientos de tarjetas para este filtro</p></div></td></tr>`;
-    document.getElementById('tarjetas-resumen').innerHTML = '';
-    document.getElementById('tarjetas-total').textContent = '';
-    return;
-  }
-
-  // Summary by titular
-  const porTitular = {};
-  tarjetasCache.forEach(m => {
-    if (!porTitular[m.titular]) porTitular[m.titular] = { total: 0, count: 0, tipo: m.tipo };
-    porTitular[m.titular].total += m.importe || 0;
-    porTitular[m.titular].count++;
+    if(estados[l.lote_id]) return {l, tipo:'sin_nota'};
+    if(+l.bruto < 0) return {l, tipo:'devolucion'};
+    const prop = proponer(l);
+    return prop ? {l, tipo:'propuesta', prop} : {l, tipo:'sin_exacta'};
   });
 
-  document.getElementById('tarjetas-resumen').innerHTML = Object.entries(porTitular)
-    .sort((a,b) => a[0].localeCompare(b[0]))
-    .map(([titular, d]) => `
-      <div class="stat-card" style="min-width:160px;cursor:pointer" onclick="filtrarPorTitular('${titular}')">
-        <div class="stat-label">${titular}</div>
-        <div class="stat-value negative" style="font-size:16px">${formatEur(d.total)}</div>
-        <div class="stat-sub">${d.count} movimientos · <span class="badge ${d.tipo === 'Viat' ? 'badge-escuela' : 'badge-sociedad'}" style="font-size:10px">${d.tipo || 'Visa'}</span></div>
-      </div>
-    `).join('');
+  const pend = filas.filter(f=>f.tipo==='propuesta' || f.tipo==='sin_exacta');
+  $('c-lotes').textContent  = pend.length;
+  $('c-pend').textContent   = eur(pend.reduce((a,f)=>a+ +f.l.bruto,0));
+  $('c-sueltas').textContent= huer.length;
+  $('c-comis').textContent  = eur(vis.reduce((a,l)=>a+ +l.comision,0));
 
-  const total = tarjetasCache.reduce((s, m) => s + (m.importe || 0), 0);
-  document.getElementById('tarjetas-total').textContent = formatEur(total);
+  $('tb-huer').innerHTML = huer.length ? huer.map(n=>`
+    <tr><td>${n.created_at.slice(0,10)}</td><td>nº${n.socio_num}</td><td>${n.mesa||''}</td>
+      <td class="num">${eur(+n.total)}</td>
+      <td><button class="act ghost mini" onclick="pasarAEfectivo('${n.id}',${n.total})">Era efectivo</button></td>
+    </tr>`).join('')
+    : '<tr><td colspan="5" class="mini">Ninguna. Todas las notas de tarjeta tienen su abono.</td></tr>';
 
-  tbody.innerHTML = tarjetasCache.map(m => {
-    const impClass = m.importe >= 0 ? 'importe-pos' : 'importe-neg';
-    return `<tr>
-      <td style="white-space:nowrap;font-size:12px">${m.fecha}</td>
-      <td style="font-weight:500;font-size:12px">${m.titular || '—'}</td>
-      <td><span class="badge ${m.tipo === 'Viat' ? 'badge-escuela' : 'badge-sociedad'}">${m.tipo || 'Visa'}</span></td>
-      <td style="max-width:200px;font-size:12px">${m.concepto}</td>
-      <td style="font-size:12px;color:var(--muted)">${m.localidad || '—'}</td>
-      <td style="text-align:right" class="${impClass}">${formatEur(m.importe)}</td>
-      <td>
-        <select onchange="guardarCampoVisa('${m.id}','imputar_a',this.value,this)" style="font-size:12px;padding:3px 6px;border-radius:5px;border:1px solid var(--border);background:${m.imputar_a==='Escuela'?'#eff6ff':m.imputar_a==='Sociedad'?'#f0fdf4':m.imputar_a==='Visas'?'#f5f3ff':'#fffbeb'};color:${m.imputar_a==='Escuela'?'var(--escuela)':m.imputar_a==='Sociedad'?'var(--sociedad)':m.imputar_a==='Visas'?'#7c3aed':'var(--warn)'}">
-          <option value="Escuela" ${m.imputar_a==='Escuela'?'selected':''}>Escuela</option>
-          <option value="Sociedad" ${m.imputar_a==='Sociedad'?'selected':''}>Sociedad</option>
-          <option value="???" ${m.imputar_a==='???'||!m.imputar_a?'selected':''}>???</option>
-        </select>
-      </td>
-      <td>
-        <select onchange="guardarCampoVisa('${m.id}','concepto_basico',this.value,this)" style="font-size:12px;padding:3px 6px;border-radius:5px;border:1px solid var(--border);max-width:180px">
-          <option value="">— concepto —</option>
-          ${(m.imputar_a && CONCEPTOS[m.imputar_a] ? CONCEPTOS[m.imputar_a] : [...CONCEPTOS.Escuela,...CONCEPTOS.Sociedad]).map(c=>`<option value="${c}" ${c===m.concepto_basico?'selected':''}>${c}</option>`).join('')}
-        </select>
-      </td>
-    </tr>`;
+  /* Ordenación */
+  const val = f => ({
+    fecha: f.l.fecha, ref: f.l.ref,
+    bruto: +f.l.bruto, comision: +f.l.comision,
+    estado: RANK[f.tipo]
+  })[orden.col];
+  filas.sort((a,b)=>{
+    const x=val(a), y=val(b);
+    return (x<y?-1:x>y?1:0) * orden.dir;
+  });
+  ['fecha','ref','bruto','comision','estado'].forEach(k=>
+    $('o-'+k).textContent = orden.col===k ? (orden.dir===1?'▲':'▼') : '');
+
+  $('tb-tpv').innerHTML = filas.map(f=>{
+    const l = f.l;
+    if(f.tipo==='conciliado' || f.tipo==='descuadre'){
+      const ok = f.tipo==='conciliado';
+      return fila(l, `<span class="tag ${ok?'ok':'no'}">${ok?'Conciliado':'Descuadra '+eur(f.suma-l.bruto)}</span>`,
+        `<button class="act ghost mini" onclick="desligar('${l.lote_id}')">Deshacer</button>`) + detalle(f.asign);
+    }
+    if(f.tipo==='devolucion') return fila(l,
+      '<span class="tag gris">Devolución</span>',
+      `<button class="act ghost mini" onclick="marcarSinNota('${l.lote_id}')">Archivar</button>`);
+    if(f.tipo==='sin_nota') return fila(l,
+      `<span class="tag gris">Sin nota${estados[l.lote_id].motivo?' · '+estados[l.lote_id].motivo:''}</span>`,
+      `<button class="act ghost mini" onclick="reabrir('${l.lote_id}')">Reabrir</button>`);
+    if(f.tipo==='propuesta'){
+      const nEf = f.prop.filter(n=>n.forma_pago==='efectivo').length;
+      const aviso = nEf ? ` · <span class="efect">${nEf} marcada${nEf>1?'s':''} como efectivo</span>` : '';
+      return fila(l, `<span class="tag wait">${f.prop.length} nota${f.prop.length>1?'s':''} encajan${aviso}</span>`,
+        `<button class="act mini" onclick='ligar("${l.lote_id}",${JSON.stringify(f.prop.map(n=>({id:n.id,ef:n.forma_pago==='efectivo'})))})'>Conciliar</button>`)
+        + detalle(f.prop, true);
+    }
+    return fila(l, '<span class="tag no">Sin combinación exacta</span>',
+      `<button class="act ghost mini" onclick="marcarSinNota('${l.lote_id}')">Marcar sin nota</button>`);
   }).join('');
 }
 
-function filtrarPorTitular(titular) {
-  document.getElementById('filtro-tarjeta-titular').value = titular;
-  cargarTarjetas();
+function fila(l, estado, accion){
+  const rep = lotes.filter(x=>x.ref===l.ref).length > 1
+    ? ' <span class="tag no" title="Esta referencia aparece en más de un apunte">×'
+      + lotes.filter(x=>x.ref===l.ref).length + '</span>' : '';
+  return `<tr><td>${l.fecha}</td><td style="font-family:'DM Mono'">${l.ref}${rep}</td>
+    <td class="num">${eur(+l.bruto)}</td><td class="num neg">${eur(+l.comision)}</td>
+    <td>${estado}</td><td>${accion}</td></tr>`;
+}
+function detalle(ns, prop){
+  return `<tr><td colspan="6" class="notas-lote">${prop?'Propuesta: ':''}` +
+    ns.map(n=>`nº${n.socio_num} · ${eur(+n.total)} · ${n.created_at.slice(0,10)}` +
+      (n.forma_pago==='efectivo'?' <span class="efect">(efectivo)</span>':'')).join('  ·  ') + `</td></tr>`;
 }
 
-function exportarTarjetas() {
-  if (!tarjetasCache.length) return;
-  const rows = [['Fecha','Titular','Tipo','Concepto','Localidad','Importe','Categoría','Vinculado']];
-  tarjetasCache.forEach(m => {
-    rows.push([m.fecha, m.titular, m.tipo, m.concepto, m.localidad, m.importe, m.concepto_basico, m.movimiento_id ? 'Sí' : 'No']);
-  });
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Tarjetas');
-  XLSX.writeFile(wb, 'Tarjetas_CCI.xlsx');
+/* Combinación exacta entre las notas pendientes de la ventana previa al abono. */
+function proponer(l){
+  const dias = +$('f-vent').value || 4;
+  const hasta = new Date(l.fecha+'T23:59:59');
+  const desde = new Date(l.fecha); desde.setDate(desde.getDate()-dias);
+  const cand = notas.filter(n=>!n.lote_ref && new Date(n.created_at)<=hasta && new Date(n.created_at)>=desde)
+                    .sort((a,b)=>b.total-a.total);
+  const obj = c(l.bruto);
+  let res=null, pasos=0;
+  (function dfs(i,suma,acc){
+    if(res || ++pasos>60000) return;
+    if(suma===obj){ res=acc.slice(); return; }
+    if(suma>obj || i>=cand.length) return;
+    dfs(i+1, suma+c(cand[i].total), acc.concat(cand[i]));
+    dfs(i+1, suma, acc);
+  })(0,0,[]);
+  return res;
 }
 
-// ─── EDIT VISA ────────────────────────────────────────────────
-let editandoVisa = null;
-
-function abrirEditarVisa(id) {
-  editandoVisa = tarjetasCache.find(m => m.id === id);
-  if (!editandoVisa) return;
-
-  document.getElementById('modal-visa-titulo').textContent = editandoVisa.concepto;
-  document.getElementById('modal-visa-subtitulo').textContent = 
-    `${editandoVisa.fecha} · ${editandoVisa.titular} · ${formatEur(editandoVisa.importe)}`;
-  document.getElementById('visa-edit-area').value = editandoVisa.imputar_a || 'Escuela';
-  document.getElementById('visa-edit-obs').value = editandoVisa.observaciones || '';
-  updateVisaConceptoSelect(editandoVisa.concepto_basico);
-  document.getElementById('modal-editar-visa').classList.add('open');
+async function rpc(fn, args){
+  const r = await fetch(SUPA+'/rest/v1/rpc/'+fn, {method:'POST', headers:authHeaders(), body:JSON.stringify(args)});
+  const txt = await r.text();
+  if(!r.ok) throw new Error(r.status+' · '+txt);
+  return txt ? JSON.parse(txt) : null;
 }
 
-function updateVisaConceptoSelect(selected) {
-  const area = document.getElementById('visa-edit-area').value;
-  const sel = document.getElementById('visa-edit-concepto');
-  const opts = area && CONCEPTOS[area] ? CONCEPTOS[area] : [...CONCEPTOS.Escuela, ...CONCEPTOS.Sociedad];
-  sel.innerHTML = '<option value="">— selecciona —</option>' + 
-    opts.map(c => `<option value="${c}" ${c === (selected || editandoVisa?.concepto_basico) ? 'selected' : ''}>${c}</option>`).join('');
-}
-
-async function guardarEdicionVisa() {
-  if (!editandoVisa) return;
-  const body = {
-    imputar_a: document.getElementById('visa-edit-area').value,
-    concepto_basico: document.getElementById('visa-edit-concepto').value,
-    observaciones: document.getElementById('visa-edit-obs').value || null,
-  };
-  await fetch(`${SUPABASE_URL}/rest/v1/movimientos_visa?id=eq.${editandoVisa.id}`, {
-    method: 'PATCH',
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${sesionToken()}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(body)
-  });
-  cerrarModal('modal-editar-visa');
-  toast('Guardado ✓');
-  await cargarTarjetas();
-}
-
-// ─── CONFIG ───────────────────────────────────────────────────
-let editandoConcepto = null;
-
-async function cargarConfig() {
-  const data = await sbGet('conceptos', 'activo=eq.true&order=area.asc,orden.asc');
-  if (!Array.isArray(data)) return;
-  const escuela = data.filter(c => c.area === 'Escuela');
-  const sociedad = data.filter(c => c.area === 'Sociedad');
-
-  document.getElementById('config-escuela-body').innerHTML = escuela.map(c => `
-    <tr>
-      <td>${c.nombre}</td>
-      <td style="color:var(--muted)">${c.orden}</td>
-      <td style="display:flex;gap:6px">
-        <button class="btn btn-secondary btn-sm" onclick="abrirEditarConcepto('${c.id}','${c.area}','${c.nombre}',${c.orden})">Editar</button>
-        <button class="btn btn-secondary btn-sm" style="color:var(--accent)" onclick="eliminarConcepto('${c.id}')">✕</button>
-      </td>
-    </tr>
-  `).join('');
-
-  document.getElementById('config-sociedad-body').innerHTML = sociedad.map(c => `
-    <tr>
-      <td>${c.nombre}</td>
-      <td style="color:var(--muted)">${c.orden}</td>
-      <td style="display:flex;gap:6px">
-        <button class="btn btn-secondary btn-sm" onclick="abrirEditarConcepto('${c.id}','${c.area}','${c.nombre}',${c.orden})">Editar</button>
-        <button class="btn btn-secondary btn-sm" style="color:var(--accent)" onclick="eliminarConcepto('${c.id}')">✕</button>
-      </td>
-    </tr>
-  `).join('');
-}
-
-function abrirNuevoConcepto() {
-  editandoConcepto = null;
-  document.getElementById('modal-concepto-title').textContent = 'Nuevo concepto';
-  document.getElementById('mc-area').value = 'Escuela';
-  document.getElementById('mc-nombre').value = '';
-  document.getElementById('mc-orden').value = '99';
-  document.getElementById('modal-concepto').classList.add('open');
-}
-
-function abrirEditarConcepto(id, area, nombre, orden) {
-  editandoConcepto = id;
-  document.getElementById('modal-concepto-title').textContent = 'Editar concepto';
-  document.getElementById('mc-area').value = area;
-  document.getElementById('mc-nombre').value = nombre;
-  document.getElementById('mc-orden').value = orden;
-  document.getElementById('modal-concepto').classList.add('open');
-}
-
-async function guardarConcepto() {
-  const area = document.getElementById('mc-area').value;
-  const nombre = document.getElementById('mc-nombre').value.trim();
-  const orden = parseInt(document.getElementById('mc-orden').value) || 99;
-  if (!nombre) return;
-
-  if (editandoConcepto) {
-    await fetch(`${SUPABASE_URL}/rest/v1/conceptos?id=eq.${editandoConcepto}`, {
-      method: 'PATCH',
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${sesionToken()}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ area, nombre, orden })
+async function ligar(ref, items){
+  try{
+    const n = await rpc('conciliar_lote', {
+      p_ref: ref,
+      p_ids: items.map(i=>i.id),
+      p_corregir: items.some(i=>i.ef)
     });
-  } else {
-    await sbPost('conceptos', { area, nombre, orden, activo: true });
+    if(!n) throw new Error('No se ha modificado ninguna nota.');
+    await cargarTPV(); cargarCaja();
+  }catch(e){ alert('No se ha podido conciliar:\n\n'+e.message); }
+}
+async function desligar(ref){
+  if(!confirm('¿Deshacer la conciliación? La forma de pago corregida no se revierte.')) return;
+  try{ await rpc('desconciliar_lote', {p_ref:ref}); cargarTPV(); }
+  catch(e){ alert('No se ha podido deshacer:\n\n'+e.message); }
+}
+async function pasarAEfectivo(id, total){
+  if(!confirm('Marcar esta nota de '+eur(total)+' como cobrada en efectivo.\n\n'
+    +'Entrará en el arqueo de caja. ¿Continuar?')) return;
+  try{
+    const n = await rpc('nota_a_efectivo', {p_id:id});
+    if(!n) throw new Error('No se ha modificado ninguna nota.');
+    await cargarTPV(); cargarCaja();
+  }catch(e){ alert('No se ha podido cambiar:\n\n'+e.message); }
+}
+
+async function marcarSinNota(ref){
+  const motivo = prompt('Motivo (ordenador averiado, anterior a las notas…):','ordenador averiado');
+  if(motivo===null) return;
+  await api('tpv_lotes_estado', {method:'POST', headers:authHeaders({Prefer:'resolution=merge-duplicates'}),
+    body:JSON.stringify({ref, estado:'sin_nota', motivo})});
+  cargarTPV();
+}
+async function reabrir(ref){
+  await api('tpv_lotes_estado?ref=eq.'+ref, {method:'DELETE'});
+  cargarTPV();
+}
+
+/* ================= CONTROL ================= */
+function pintarControl(){
+  const m = {};
+  notas.filter(n=>n.forma_pago==='tarjeta').forEach(n=>{ const k=n.created_at.slice(0,7);
+    (m[k] ??= {n:0,en:0,l:0,el:0}); m[k].n++; m[k].en += +n.total; });
+  lotes.forEach(l=>{ const k=l.fecha.slice(0,7);
+    (m[k] ??= {n:0,en:0,l:0,el:0}); m[k].l++; m[k].el += +l.bruto; });
+  $('tb-ctrl').innerHTML = Object.keys(m).sort().map(k=>{
+    const d = m[k].en - m[k].el;
+    return `<tr><td>${k}</td><td class="num">${m[k].n}</td><td class="num">${eur(m[k].en)}</td>
+      <td class="num">${m[k].l}</td><td class="num">${eur(m[k].el)}</td>
+      <td class="num ${Math.abs(d)>100?(d<0?'neg':'pos'):''}">${eur(d)}</td></tr>`;
+  }).join('');
+}
+
+/* ================= BODEGA ================= */
+let bod = null;
+
+async function cargarBodega(){
+  if(bod) return pintarBodega();
+  try{
+    const [tpv, compras, visa] = await Promise.all([
+      api('movimientos?select=fecha,importe&imputar_a=eq.Sociedad&concepto=eq.Bodega'),
+      api('movimientos?select=fecha,importe,concepto_bancario&concepto=eq.Compra%20Bodega'),
+      api('movimientos_visa?select=fecha,importe,concepto,contabilizado&concepto_basico=eq.Compra%20Bodega')
+    ]);
+    bod = {tpv, compras, visa};
+    pintarBodega();
+  }catch(e){
+    $('tb-bod').innerHTML = '<tr><td colspan="4" style="color:#c0392b;padding:12px">'
+      + 'No se han podido cargar los datos: ' + e.message + '</td></tr>';
   }
-
-  cerrarModal('modal-concepto');
-  await cargarConceptos();
-  await cargarConfig();
-  toast('Concepto guardado ✓');
 }
 
-async function eliminarConcepto(id) {
-  if (!confirm('¿Eliminar este concepto?')) return;
-  await fetch(`${SUPABASE_URL}/rest/v1/conceptos?id=eq.${id}`, {
-    method: 'PATCH',
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${sesionToken()}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ activo: false })
+function pintarBodega(){
+  if(!bod) return;
+  const d1 = $('b-desde').value || '1900-01-01';
+  const d2 = $('b-hasta').value || '2999-12-31';
+  const en = f => f >= d1 && f <= d2;
+
+  /* Ingresos: efectivo del libro de caja + abonos TPV del banco.
+     Los traspasos al banco NO se suman: ese dinero ya está contado en el efectivo. */
+  const efec = cajaMovs.filter(m=>m.categoria==='Ingreso Bodega' && en(m.fecha));
+  const tpv  = bod.tpv.filter(m=>en(m.fecha));
+  /* Compras: banco + consumibles en metálico + tickets de tarjeta reclasificados */
+  const cban = bod.compras.filter(m=>en(m.fecha));
+  const cmet = cajaMovs.filter(m=>m.categoria==='Gasto Bodega' && en(m.fecha));
+  const cvis = bod.visa.filter(m=>en(m.fecha));
+
+  const sum = a => a.reduce((x,m)=>x+ +m.importe, 0);
+  const ing = sum(efec) + sum(tpv);
+  const com = sum(cban) + sum(cmet) + sum(cvis);   // negativos
+  const mar = ing + com;
+  const pct = ing ? (mar/ing*100) : 0;
+
+  $('b-ing').textContent = eur(ing);
+  $('b-com').textContent = eur(com);
+  $('b-mar').textContent = eur(mar);
+  $('b-mar').className   = 'val ' + (mar<0?'neg':'pos');
+  $('b-pct').textContent = pct.toFixed(1) + ' %';
+
+  const pend = cvis.filter(m=>!m.contabilizado);
+  const fila = (o,d,a,extra='') => `<tr><td>${o}</td><td class="mini">${d}${extra}</td>
+    <td class="num">${a.length}</td><td class="num ${sum(a)<0?'neg':'pos'}">${eur(sum(a))}</td></tr>`;
+
+  $('tb-bod').innerHTML =
+      fila('Ingresos · efectivo','Libro de caja, categoría «Ingreso Bodega»', efec)
+    + fila('Ingresos · tarjeta','Abonos TPV en el banco', tpv)
+    + fila('Compras · banco','Recibos de proveedores, concepto «Compra Bodega»', cban)
+    + fila('Compras · metálico','Libro de caja, categoría «Gasto Bodega»', cmet)
+    + fila('Compras · tarjeta','Tickets de visa marcados «Compra Bodega»', cvis,
+        pend.length ? ` · <span class="efect">${pend.length} sin contabilizar (${eur(sum(pend))})</span>` : '')
+    + `<tr style="background:#f3f1ea;font-weight:700"><td colspan="3">Margen</td>
+       <td class="num">${eur(mar)}</td></tr>`;
+
+  /* --- Detalle de compras --- */
+  const det = [
+    ...cban.map(r=>({fecha:r.fecha, org:'Banco',    txt:r.concepto_bancario||'', imp:+r.importe})),
+    ...cmet.map(r=>({fecha:r.fecha, org:'Metálico', txt:r.concepto||'',          imp:+r.importe})),
+    ...cvis.map(r=>({fecha:r.fecha, org:'Tarjeta',  txt:(r.concepto||'') + (r.contabilizado?'':' · sin contabilizar'), imp:+r.importe}))
+  ].sort((a,b)=>b.fecha.localeCompare(a.fecha));
+
+  /* Proveedor: se deduce del texto del apunte */
+  const prov = t => {
+    const u = (t||'').toUpperCase();
+    for(const [k,v] of [['ARZAC','Vinos Arzak'],['ARZAK','Vinos Arzak'],
+        ['LEKU BERRI','Cash Leku Berri'],['BAQUE','Cafés Baqué'],
+        ['ARCHAGAR','Archagar'],['MAKRO','Makro'],['COCA','Coca-Cola']])
+      if(u.includes(k)) return v;
+    return 'Otros';
+  };
+
+  const sel = $('b-prov');
+  const provs = [...new Set(det.map(r=>prov(r.txt)))].sort();
+  if(sel.options.length <= 1) provs.forEach(p=>sel.add(new Option(p,p)));
+  const fp = sel.value;
+  const detV = fp ? det.filter(r=>prov(r.txt)===fp) : det;
+
+  $('tb-bodcom').innerHTML = (detV.length ? detV.map(r=>`
+    <tr><td>${r.fecha}</td>
+      <td><span class="tag ${r.org==='Banco'?'gris':r.org==='Tarjeta'?'wait':'ok'}">${r.org}</span></td>
+      <td>${r.txt}</td>
+      <td class="num neg">${eur(r.imp)}</td></tr>`).join('')
+    : '<tr><td colspan="4" class="mini">Sin compras con estos filtros.</td></tr>')
+    + `<tr style="background:#f3f1ea;font-weight:700"><td colspan="3">${detV.length} compras</td>
+       <td class="num">${eur(detV.reduce((a,r)=>a+r.imp,0))}</td></tr>`;
+
+  const pg = {};
+  det.forEach(r=>{ const p=prov(r.txt); (pg[p] ??= {n:0,s:0}); pg[p].n++; pg[p].s += r.imp; });
+  $('tb-bodprov').innerHTML = Object.entries(pg).sort((a,b)=>a[1].s-b[1].s).map(([p,v])=>`
+    <tr><td>${p}</td><td class="num">${v.n}</td><td class="num neg">${eur(v.s)}</td>
+      <td class="num">${com ? (v.s/com*100).toFixed(1) : '0'} %</td></tr>`).join('');
+
+  /* Por meses */
+  const m = {};
+  const add = (f,k,v) => { const x=f.slice(0,7); (m[x] ??= {ef:0,tj:0,co:0}); m[x][k] += +v; };
+  efec.forEach(r=>add(r.fecha,'ef',r.importe));
+  tpv .forEach(r=>add(r.fecha,'tj',r.importe));
+  [...cban,...cmet,...cvis].forEach(r=>add(r.fecha,'co',r.importe));
+
+  $('tb-bodmes').innerHTML = Object.keys(m).sort().map(k=>{
+    const r = m[k], i = r.ef + r.tj, g = i + r.co;
+    return `<tr><td>${k}</td>
+      <td class="num">${eur(r.ef)}</td><td class="num">${eur(r.tj)}</td>
+      <td class="num pos">${eur(i)}</td><td class="num neg">${eur(r.co)}</td>
+      <td class="num ${g<0?'neg':''}">${eur(g)}</td></tr>`;
+  }).join('') || '<tr><td colspan="6" class="mini">Sin datos en este periodo.</td></tr>';
+}
+
+/* ================= PRECIOS ================= */
+let carta = [], precios = [], selProd = null;
+
+async function cargarPrecios(){
+  try{
+    [carta, precios] = await Promise.all([
+      api('carta?select=id,categoria,nombre,precio,activo,cat_orden,orden&activo=eq.true&order=cat_orden,orden'),
+      api('precios_compra?select=*&order=fecha.desc')
+    ]);
+    const sc = $('n-carta');
+    if(!sc.options.length){
+      carta.forEach(c=>sc.add(new Option(c.categoria+' · '+c.nombre, c.id)));
+      sc.onchange = pintarHistorico;
+      $('n-fec').value = new Date().toISOString().slice(0,10);
+    }
+    const pc = $('p-cat');
+    if(pc.options.length <= 1)
+      [...new Set(carta.map(c=>c.categoria))].forEach(c=>pc.add(new Option(c,c)));
+    const dl = $('l-prov');
+    if(!dl.children.length)
+      [...new Set(precios.map(p=>p.proveedor))].forEach(p=>
+        dl.appendChild(Object.assign(document.createElement('option'),{value:p})));
+    pintarPrecios(); pintarHistorico();
+  }catch(e){
+    $('tb-pre').innerHTML = '<tr><td colspan="8" style="color:#c0392b;padding:12px">'
+      + 'No se han podido cargar los datos: ' + e.message + '</td></tr>';
+  }
+}
+
+const unit = p => (+p.precio_neto / (+p.unidades||1)) * (1 + (+p.iva||21)/100);
+
+function pintarPrecios(){
+  const fc = $('p-cat').value, fv = $('p-ver').value;
+
+  const filas = carta.map(c=>{
+    const hist = precios.filter(p=>p.carta_id === c.id);
+    if(!hist.length) return {c, coste:null};
+    const ult  = hist[0];                                  // ya viene ordenado por fecha desc
+    const best = hist.reduce((a,b)=> unit(b) < unit(a) ? b : a);
+    const coste = unit(ult);
+    return {c, ult, best, coste, mejor: unit(best) < coste - 0.005 ? best : null,
+            margen: +c.precio - coste, pct: c.precio ? (+c.precio - coste)/+c.precio*100 : 0};
   });
-  await cargarConceptos();
-  await cargarConfig();
-  toast('Concepto eliminado ✓');
+
+  const con = filas.filter(f=>f.coste !== null);
+  const med = con.length ? con.reduce((a,f)=>a+f.pct,0)/con.length : 0;
+  const aho = con.filter(f=>f.mejor).reduce((a,f)=>a + (f.coste - unit(f.mejor)), 0);
+
+  $('p-med').textContent = med.toFixed(1) + ' %';
+  $('p-con').textContent = con.length;
+  $('p-sin').textContent = filas.length - con.length;
+  $('p-aho').textContent = eur(aho) + ' /ud';
+
+  let vis = filas;
+  if(fc) vis = vis.filter(f=>f.c.categoria === fc);
+  if(fv==='sin')   vis = vis.filter(f=>f.coste === null);
+  if(fv==='bajo')  vis = vis.filter(f=>f.coste !== null && f.pct < 40);
+  if(fv==='mejor') vis = vis.filter(f=>f.mejor);
+
+  $('tb-pre').innerHTML = vis.length ? vis.map(f=>{
+    if(f.coste === null) return `<tr>
+      <td>${f.c.nombre}<div class="mini">${f.c.categoria}</div></td>
+      <td colspan="4" class="mini">Sin precio de compra registrado</td>
+      <td class="num">${eur(+f.c.precio)}</td><td></td>
+      <td><button class="act ghost mini" onclick="verProducto(${f.c.id})">Compras</button>
+          <button class="act ghost mini" onclick="editarVenta(${f.c.id},${f.c.precio})">Venta</button></td></tr>`;
+    const col = f.pct < 30 ? 'neg' : f.pct < 40 ? 'warnc' : 'pos';
+    return `<tr>
+      <td>${f.c.nombre}<div class="mini">${f.c.categoria}</div></td>
+      <td class="mini">${f.ult.proveedor}<div class="mini">${f.ult.fecha}</div></td>
+      <td class="num">${(+f.ult.precio_neto).toFixed(2)}${+f.ult.unidades>1?' /'+f.ult.unidades:''}</td>
+      <td class="num">${f.coste.toFixed(2)}</td>
+      <td class="num">${eur(+f.c.precio)}</td>
+      <td class="num ${col}">${f.margen.toFixed(2)} · ${f.pct.toFixed(0)} %</td>
+      <td class="mini">${f.mejor ? f.mejor.proveedor+' '+unit(f.mejor).toFixed(2) : '—'}</td>
+      <td><button class="act ghost mini" onclick="verProducto(${f.c.id})">Compras</button>
+          <button class="act ghost mini" onclick="editarVenta(${f.c.id},${f.c.precio})">Venta</button></td></tr>`;
+  }).join('') : '<tr><td colspan="8" class="mini">Sin productos con estos filtros.</td></tr>';
 }
 
-// ─── UTILS ────────────────────────────────────────────────────
-function formatEur(n) {
-  if (n == null) return '—';
-  return new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) + ' €';
+function pintarHistorico(){
+  const id = +$('n-carta').value;
+  const h = precios.filter(p=>p.carta_id === id);
+  $('tb-hist').innerHTML = h.length ? h.map(p=>`
+    <tr><td>${p.fecha}</td><td>${p.proveedor}</td><td class="mini">${p.descripcion||''}</td>
+      <td class="num">${(+p.precio_neto).toFixed(3)}</td><td class="num">${p.unidades}</td>
+      <td class="num">${unit(p).toFixed(3)}</td>
+      <td><button class="act ghost mini" onclick="editarPrecio('${p.id}')">Editar</button>
+          <button class="act ghost mini" onclick="borrarPrecio('${p.id}')">Borrar</button></td></tr>`).join('')
+    : '<tr><td colspan="7" class="mini">Sin precios registrados para este producto.</td></tr>';
 }
 
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2500);
+async function guardarPrecio(){
+  const pre = parseFloat(($('n-pre').value||'').replace(',','.'));
+  if(!$('n-carta').value || isNaN(pre) || !$('n-prov').value.trim()){
+    alert('Faltan producto, proveedor o precio.'); return;
+  }
+  try{
+    await api('precios_compra', {method:'POST', body:JSON.stringify({
+      carta_id: +$('n-carta').value, proveedor: $('n-prov').value.trim(),
+      descripcion: $('n-desc').value.trim() || null, precio_neto: pre,
+      unidades: +$('n-uds').value || 1, iva: +$('n-iva').value || 21,
+      fecha: $('n-fec').value })});
+    $('n-desc').value=''; $('n-pre').value=''; $('n-uds').value=1;
+    precios = null; await cargarPrecios();
+  }catch(e){ alert('No se ha podido guardar:\n\n'+e.message); }
 }
 
-// Si ya hay sesión abierta en otra app del grupo, entrar directo
+async function editarPrecio(id){
+  const p = precios.find(x=>x.id===id);
+  if(!p) return;
+  const pre = prompt('Precio neto de factura (sin IVA):', p.precio_neto);
+  if(pre===null) return;
+  const uds = prompt('Unidades que trae ese importe:', p.unidades);
+  if(uds===null) return;
+  const fec = prompt('Fecha de la factura (AAAA-MM-DD):', p.fecha);
+  if(fec===null) return;
+  const prov = prompt('Proveedor:', p.proveedor);
+  if(prov===null) return;
+  const n = parseFloat(String(pre).replace(',','.'));
+  if(isNaN(n) || !prov.trim()){ alert('Precio o proveedor no válidos.'); return; }
+  try{
+    const r = await fetch(SUPA+'/rest/v1/precios_compra?id=eq.'+id, {method:'PATCH',
+      headers:authHeaders({Prefer:'return=representation'}),
+      body:JSON.stringify({precio_neto:n, unidades:+uds||1, fecha:fec, proveedor:prov.trim()})});
+    const t = await r.text();
+    if(!r.ok) throw new Error(r.status+' · '+t);
+    if(t.trim()==='[]') throw new Error('La política RLS de precios_compra no permite UPDATE.');
+    await cargarPrecios();
+  }catch(e){ alert('No se ha podido editar:\n\n'+e.message); }
+}
 
+async function borrarPrecio(id){
+  if(!confirm('¿Borrar este precio de compra?')) return;
+  try{ await api('precios_compra?id=eq.'+id, {method:'DELETE'}); await cargarPrecios(); }
+  catch(e){ alert('No se ha podido borrar:\n\n'+e.message); }
+}
 
+function verProducto(id){
+  $('n-carta').value = id;
+  pintarHistorico();
+  document.querySelector('#t-pre h2:last-of-type').scrollIntoView({behavior:'smooth'});
+}
+
+async function editarVenta(id, actual){
+  const v = prompt('Precio de venta en la carta.\n\n'
+    + 'ATENCIÓN: cambia lo que se cobra a los socios desde este momento.', actual);
+  if(v===null) return;
+  const n = parseFloat(v.replace(',','.'));
+  if(isNaN(n)){ alert('Precio no válido.'); return; }
+  if(!confirm('Cambiar el precio de venta a '+eur(n)+' en la carta del TPV. ¿Confirmas?')) return;
+  try{
+    const r = await fetch(SUPA+'/rest/v1/carta?id=eq.'+id, {method:'PATCH',
+      headers:authHeaders({Prefer:'return=representation'}), body:JSON.stringify({precio:n})});
+    const t = await r.text();
+    if(!r.ok) throw new Error(r.status+' · '+t);
+    if(t.trim()==='[]') throw new Error('La política RLS de carta no permite UPDATE con la anon key.');
+    await cargarPrecios();
+  }catch(e){ alert('No se ha podido cambiar el precio:\n\n'+e.message); }
+}
+
+window.addEventListener('unhandledrejection', e => {
+  document.querySelectorAll('tbody').forEach(tb => {
+    if (tb.textContent.includes('Cargando'))
+      tb.innerHTML = '<tr><td colspan="6" style="color:#c0392b;padding:12px">'
+        + 'No se han podido cargar los datos: ' + (e.reason?.message || e.reason) + '</td></tr>';
+  });
+});
 </script>
 </body>
 </html>
