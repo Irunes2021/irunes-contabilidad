@@ -1899,6 +1899,7 @@ function cancelarImportVisa() {
 }
 
 // ─── RESUMEN ──────────────────────────────────────────────────
+const resumenCache = {};
 async function cargarResumen() {
   const [data, dataVisa] = await Promise.all([
     sbGet('movimientos', 'temporada=eq.25-26&order=fecha.asc'),
@@ -1935,6 +1936,7 @@ function renderResumenArea(movs, area, key) {
   const ingresos = Object.entries(porConceptoIng).filter(([,v]) => v > 0).sort((a,b) => b[1]-a[1]);
   const gastos = Object.entries(porConceptoGas).filter(([,v]) => v < 0).sort((a,b) => a[1]-b[1]);
   const total = filtrados.reduce((s,m) => s + m.importe, 0);
+  resumenCache[key] = { area, ingresos, gastos, total };
 
   document.getElementById(`resumen-${key}-ingresos`).innerHTML =
     '<div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px">INGRESOS</div>' +
@@ -1962,7 +1964,41 @@ function exportarExcel() {
   XLSX.writeFile(wb, `Movimientos_${MESES[mesActivo]}_CCI.xlsx`);
 }
 
-function exportarResumen() { toast('Próximamente'); }
+function exportarResumen() {
+  if (!Object.keys(resumenCache).length) { toast('Abre primero el resumen'); return; }
+  const temporada = document.getElementById('resumen-temporada').textContent.trim();
+  const wb = XLSX.utils.book_new();
+
+  // Hoja "Resumen": una fila por área
+  const resRows = [['Área', 'Ingresos', 'Gastos', 'Resultado']];
+  ['escuela', 'sociedad'].forEach(key => {
+    const d = resumenCache[key];
+    if (!d) return;
+    const totalIng = d.ingresos.reduce((s, [, v]) => s + v, 0);
+    const totalGas = d.gastos.reduce((s, [, v]) => s + v, 0);
+    resRows.push([d.area, +totalIng.toFixed(2), +totalGas.toFixed(2), +d.total.toFixed(2)]);
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resRows), 'Resumen');
+
+  // Hojas "Escuela" y "Sociedad"
+  ['escuela', 'sociedad'].forEach(key => {
+    const d = resumenCache[key];
+    if (!d) return;
+    const rows = [];
+    rows.push(['INGRESOS', '']);
+    d.ingresos.forEach(([c, v]) => rows.push([c, +v.toFixed(2)]));
+    rows.push(['Total ingresos', +d.ingresos.reduce((s, [, v]) => s + v, 0).toFixed(2)]);
+    rows.push([]);
+    rows.push(['GASTOS', '']);
+    d.gastos.forEach(([c, v]) => rows.push([c, +v.toFixed(2)]));
+    rows.push(['Total gastos', +d.gastos.reduce((s, [, v]) => s + v, 0).toFixed(2)]);
+    rows.push([]);
+    rows.push(['RESULTADO', +d.total.toFixed(2)]);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), d.area);
+  });
+
+  XLSX.writeFile(wb, `Resumen_${temporada}_CCI.xlsx`);
+}
 
 // ─── TARJETAS ─────────────────────────────────────────────────
 let tarjetasCache = [];
