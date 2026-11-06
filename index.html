@@ -1051,7 +1051,7 @@ async function aplicarFiltroMovimientos() {
   }
 
   document.getElementById('tabla-body').innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px"><div class="spinner"></div></td></tr>`;
-  const data = await sbGet('movimientos', params);
+  const data = await sbGetAll('movimientos', params);
   movimientosCache = Array.isArray(data) ? data : [];
   rellenarFiltroConceptosMov();
   aplicarFiltrosCliente();
@@ -1121,6 +1121,30 @@ async function sbGet(table, params = '') {
     headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${sesionToken()}` }
   });
   return r.json();
+}
+
+// Trae TODAS las filas. PostgREST corta a 1000 por defecto y lo hace en silencio,
+// asi que hay que pedirlas por paginas con la cabecera Range.
+async function sbGetAll(table, params = '') {
+  const PAGE = 1000;
+  let out = [], desde = 0;
+  for (let vuelta = 0; vuelta < 50; vuelta++) {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${sesionToken()}`,
+        'Range-Unit': 'items',
+        Range: `${desde}-${desde + PAGE - 1}`
+      }
+    });
+    if (!r.ok) { console.error('sbGetAll', table, r.status, await r.text()); break; }
+    const trozo = await r.json();
+    if (!Array.isArray(trozo) || trozo.length === 0) break;
+    out = out.concat(trozo);
+    if (trozo.length < PAGE) break;
+    desde += PAGE;
+  }
+  return out;
 }
 
 async function sbPost(table, body) {
@@ -1576,7 +1600,7 @@ async function guardarMovimientos() {
   const fechas = [...new Set(pendingImport.map(m => m.fecha))];
   const minFecha = fechas.sort()[0];
   const maxFecha = fechas.sort().slice(-1)[0];
-  const existing = await sbGet('movimientos', `fecha=gte.${minFecha}&fecha=lte.${maxFecha}&temporada=eq.25-26&select=fecha,concepto_bancario,importe`);
+  const existing = await sbGetAll('movimientos', `fecha=gte.${minFecha}&fecha=lte.${maxFecha}&temporada=eq.25-26&select=fecha,concepto_bancario,importe`);
   const existingSet = new Set(
     (Array.isArray(existing) ? existing : []).map(m => `${m.fecha}|${m.concepto_bancario}|${m.importe}`)
   );
@@ -1807,14 +1831,14 @@ async function guardarVisas() {
   const totalMovs = pendingVisas.reduce((s, v) => s + v.movimientos.length, 0);
 
   // Get existing to avoid dupes
-  const existing = await sbGet('movimientos_visa', 'select=fecha,concepto,importe,titular');
+  const existing = await sbGetAll('movimientos_visa', 'select=fecha,concepto,importe,titular');
   const existingSet = new Set(
     (Array.isArray(existing) ? existing : []).map(m => `${m.fecha}|${m.concepto}|${m.importe}|${m.titular}`)
   );
   // Key includes titular so same autopista charge on same day for different cars is NOT a dupe
 
   // Get all bank movements that are tarjeta credito for auto-linking
-  const bancoCargos = await sbGet('movimientos', 
+  const bancoCargos = await sbGetAll('movimientos', 
     `temporada=eq.25-26&concepto_bancario=like.*TARJETA CREDITO*&select=id,fecha,concepto_bancario,importe,mes`);
   const cargosArr = Array.isArray(bancoCargos) ? bancoCargos : [];
 
@@ -1902,8 +1926,8 @@ function cancelarImportVisa() {
 const resumenCache = {};
 async function cargarResumen() {
   const [data, dataVisa] = await Promise.all([
-    sbGet('movimientos', 'temporada=eq.25-26&order=fecha.asc'),
-    sbGet('movimientos_visa', 'temporada=eq.25-26&contabilizado=eq.true&select=importe,imputar_a,concepto_basico')
+    sbGetAll('movimientos', 'temporada=eq.25-26&order=fecha.asc'),
+    sbGetAll('movimientos_visa', 'temporada=eq.25-26&contabilizado=eq.true&select=importe,imputar_a,concepto_basico')
   ]);
   const movs = Array.isArray(data) ? data : [];
   const visa = Array.isArray(dataVisa) ? dataVisa : [];
@@ -2011,7 +2035,7 @@ async function cargarTarjetas() {
   if (mes) params += `&mes=eq.${mes}`;
   if (titular) params += `&titular=eq.${encodeURIComponent(titular)}`;
 
-  const data = await sbGet('movimientos_visa', params);
+  const data = await sbGetAll('movimientos_visa', params);
   tarjetasCache = Array.isArray(data) ? data : [];
 
   // Populate titular filter
